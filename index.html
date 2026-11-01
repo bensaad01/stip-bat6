@@ -80,7 +80,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <div id="status" style="padding:6px 12px;border-radius:999px;font-weight:700;font-size:12px;background:#fef9c3;color:#854d0e">🟢 Connecté</div>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
   <button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">V35 FINAL - Zone 5/6 Dimension Mesure Dropdown + Admin + Stock Machines</small>
+  <small style="opacity:.8">V35 FINAL - Zone5/6 Dimension + Login Visible + Stock Machines</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -527,6 +527,30 @@ function initAuth(){
 setTimeout(initAuth, 500);
 window.addEventListener('load', ()=>{ setTimeout(initAuth, 800); });
 // Force check every 2 seconds until auth is decided
+// V35 FIX - Always show logout button + force login when needed
+function addLogoutBtn(){
+  if(document.getElementById('logoutBtnFixed')) return;
+  const btn = document.createElement('button');
+  btn.id='logoutBtnFixed';
+  btn.textContent='🚪 Déconnexion - Voir Login';
+  btn.style.cssText='position:fixed;bottom:20px;left:20px;right:20px;z-index:9998;background:#ef4444;color:#fff;border:0;padding:16px;border-radius:12px;font-weight:900;font-size:16px;box-shadow:0 4px 20px rgba(0,0,0,0.4)';
+  btn.onclick=()=>{ if(confirm('Déconnexion? Vous verrez l\'écran Login avec ADMIN et 3 équipes.')) logout(); };
+  document.body.appendChild(btn);
+  
+  // Also add small badge top right
+  if(!document.getElementById('userBadge')){
+    const badge = document.createElement('div');
+    badge.id='userBadge';
+    let user = null;
+    try{ user = JSON.parse(localStorage.getItem('stip_auth_user')||'null'); }catch(e){}
+    badge.textContent = user ? `👤 ${user.card} - ${user.name} | Poste ${user.poste}` : '👤 Non connecté - Cliquez Déconnexion pour voir Login';
+    badge.style.cssText='position:fixed;top:70px;right:10px;left:10px;z-index:9997;background:#0f172a;color:#fff;padding:8px 12px;border-radius:8px;font-size:11px;font-weight:700;text-align:center;border:2px solid #00ff88';
+    document.body.appendChild(badge);
+  }
+}
+setTimeout(addLogoutBtn, 1000);
+setTimeout(addLogoutBtn, 3000);
+
 let authCheckInterval = setInterval(()=>{
   const authScreen = document.getElementById('authScreen');
   const hasUser = localStorage.getItem('stip_auth_user');
@@ -535,15 +559,14 @@ let authCheckInterval = setInterval(()=>{
       authScreen.style.display='flex';
       authScreen.style.visibility='visible';
       authScreen.style.opacity='1';
-    }
-    if(hasUser){
-      // hide if user exists but also show user info
+      authScreen.style.zIndex='10000';
+    } else {
       if(currentUser) showUserInfo();
     }
   }
-  // Stop after 5 seconds
 }, 1000);
-setTimeout(()=>clearInterval(authCheckInterval), 6000);
+setTimeout(()=>clearInterval(authCheckInterval), 8000);
+
 
 </script>
 
