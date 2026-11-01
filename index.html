@@ -80,7 +80,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <div id="status" style="padding:6px 12px;border-radius:999px;font-weight:700;font-size:12px;background:#fef9c3;color:#854d0e">🟢 Connecté</div>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
   <button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">V35 FINAL - Zone5/6 Dimension + Login Visible + Stock Machines</small>
+  <small style="opacity:.8">V36 FINAL - Deconnexion FIX Instant + Login ADMIN</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -440,19 +440,28 @@ function logout(){
   try{
     localStorage.removeItem('stip_auth_user');
     localStorage.removeItem('stip_current_poste');
+    localStorage.removeItem('stip_auth');
     sessionStorage.clear();
   }catch(e){}
-  // Force show auth screen
-  const authScreen=document.getElementById('authScreen');
-  if(authScreen){ authScreen.style.display='flex'; }
-  const userInfo=document.getElementById('userInfo');
-  if(userInfo) userInfo.remove();
   currentUser=null;
+  // Remove badges and buttons
+  const userInfo=document.getElementById('userInfo'); if(userInfo) userInfo.remove();
+  const badge=document.getElementById('userBadge'); if(badge) badge.remove();
+  const btnFixed=document.getElementById('logoutBtnFixed'); if(btnFixed) btnFixed.remove();
+  // Force show auth screen INSTANT
+  const authScreen=document.getElementById('authScreen');
+  if(authScreen){ 
+    authScreen.style.display='flex'; 
+    authScreen.style.visibility='visible';
+    authScreen.style.opacity='1';
+    authScreen.style.zIndex='10000';
+  }
   // Clear inputs
   const c=document.getElementById('authCard'); if(c) c.value='';
   const p=document.getElementById('authCode'); if(p) p.value='';
-  // Reload after short delay
-  setTimeout(()=>{ location.reload(); }, 300);
+  const posteSel=document.getElementById('authPoste'); if(posteSel) posteSel.value='1';
+  const err=document.getElementById('authError'); if(err) err.style.display='none';
+  console.log('Déconnexion réussie - Login visible');
 }
 // Also add emergency logout via double-click on header
 document.addEventListener('DOMContentLoaded', ()=>{
@@ -534,7 +543,7 @@ function addLogoutBtn(){
   btn.id='logoutBtnFixed';
   btn.textContent='🚪 Déconnexion - Voir Login';
   btn.style.cssText='position:fixed;bottom:20px;left:20px;right:20px;z-index:9998;background:#ef4444;color:#fff;border:0;padding:16px;border-radius:12px;font-weight:900;font-size:16px;box-shadow:0 4px 20px rgba(0,0,0,0.4)';
-  btn.onclick=()=>{ if(confirm('Déconnexion? Vous verrez l\'écran Login avec ADMIN et 3 équipes.')) logout(); };
+  btn.onclick=()=>{ logout(); };
   document.body.appendChild(btn);
   
   // Also add small badge top right
