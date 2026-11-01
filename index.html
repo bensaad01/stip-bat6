@@ -80,7 +80,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <div id="status" style="padding:6px 12px;border-radius:999px;font-weight:700;font-size:12px;background:#fef9c3;color:#854d0e">🟢 Connecté</div>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
   <button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">V33 FINAL - Stock Machines FIX + Flanc Apex Tissu + Cartes</small>
+  <small style="opacity:.8">V34 FINAL - Admin + 3 Equipes Login + Stock Machines + Tringle</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -505,8 +505,28 @@ function initAuth(){
   }
 }
 
-// Init auth on load
-setTimeout(initAuth, 300);
+// Init auth on load - V34 FIX FOR LOGIN
+setTimeout(initAuth, 500);
+window.addEventListener('load', ()=>{ setTimeout(initAuth, 800); });
+// Force check every 2 seconds until auth is decided
+let authCheckInterval = setInterval(()=>{
+  const authScreen = document.getElementById('authScreen');
+  const hasUser = localStorage.getItem('stip_auth_user');
+  if(authScreen){
+    if(!hasUser){
+      authScreen.style.display='flex';
+      authScreen.style.visibility='visible';
+      authScreen.style.opacity='1';
+    }
+    if(hasUser){
+      // hide if user exists but also show user info
+      if(currentUser) showUserInfo();
+    }
+  }
+  // Stop after 5 seconds
+}, 1000);
+setTimeout(()=>clearInterval(authCheckInterval), 6000);
+
 </script>
 
 </body></html>
