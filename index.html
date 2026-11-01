@@ -80,7 +80,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <div id="status" style="padding:6px 12px;border-radius:999px;font-weight:700;font-size:12px;background:#fef9c3;color:#854d0e">🟢 Connecté</div>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
   <button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">V32 FINAL - Code + Stock Machines + Cartes + Tringle Fix</small>
+  <small style="opacity:.8">V33 FINAL - Stock Machines FIX + Flanc Apex Tissu + Cartes</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -218,6 +218,78 @@ function view(){
 
 document.addEventListener("change", e=>{
   const t=e.target;
+  if(t.dataset.m){
+    const id=t.dataset.m;
+    S.m[id]=t.value;
+    save();
+    view();
+    // log
+    try{ S.log.unshift([new Date().toLocaleString('fr-FR'), 'Machine '+id, t.value||'—']); if(S.log.length>200) S.log.pop(); save(); }catch(e){}
+    return;
+  }
+  if(t.dataset.s){
+    const key=t.dataset.s;
+    if(t.value.trim()===""){ delete S.st[key]; } else { S.st[key]=t.value.trim(); }
+    save();
+    // update q display
+    const q=t.parentElement.querySelector('.q');
+    if(q){ const u=t.title||''; q.textContent=t.value? t.value+' '+u.toLowerCase():''; }
+    // update stock count
+    try{ const el=document.querySelector('span'); }catch(e){}
+    return;
+  }
+  if(t.dataset.o){
+    const key=t.dataset.o;
+    if(t.value.trim()===""){ delete S.ov[key]; } else { S.ov[key]=t.value.trim(); }
+    save();
+    view();
+    return;
+  }
+  if(t.dataset.z6){
+    const key=t.dataset.z6;
+    if(t.value.trim()===""){ delete S.z6[key]; } else { S.z6[key]=t.value.trim(); }
+    save();
+    return;
+  }
+  if(t.dataset.z6d){
+    const key=t.dataset.z6d;
+    S.z6d=S.z6d||{};
+    if(t.value.trim()===""){ delete S.z6d[key]; } else { S.z6d[key]=t.value; }
+    save();
+    return;
+  }
+  if(t.dataset.z6c){
+    const key=t.dataset.z6c;
+    S.z6c=S.z6c||{};
+    if(t.value.trim()===""){ delete S.z6c[key]; } else { S.z6c[key]=t.value.trim(); }
+    save();
+    return;
+  }
+  if(t.dataset.z5){
+    const key=t.dataset.z5;
+    S.z5=S.z5||{};
+    if(t.value.trim()===""){ delete S.z5[key]; } else { S.z5[key]=t.value.trim(); }
+    save();
+    return;
+  }
+  if(t.dataset.z5c){
+    const key=t.dataset.z5c;
+    S.z5c=S.z5c||{};
+    S.z5c[key]=t.value;
+    save();
+    return;
+  }
+  if(t.dataset.u){
+    const id=t.dataset.u;
+    S.un=S.un||{};
+    S.un[id]=t.value;
+    save();
+    view();
+    return;
+  }
+  if(t.dataset.fam){
+    FAM=t.value; view(); return;
+  }
   if(t.dataset.photo){
     const [zone,rowId]=t.dataset.photo.split("|");
     const file=t.files[0]; if(!file) return;
@@ -227,6 +299,17 @@ document.addEventListener("change", e=>{
       if(zone==="z5"){ S.z5photos[rowId]=ev.target.result; save(); view(); }
     };
     reader.readAsDataURL(file);
+  }
+});
+
+document.addEventListener("input", e=>{
+  const t=e.target;
+  if(t.dataset.s){
+    const key=t.dataset.s;
+    if(t.value.trim()===""){ delete S.st[key]; } else { S.st[key]=t.value.trim(); }
+    save();
+    const q=t.parentElement.querySelector('.q');
+    if(q){ const u=t.title||''; q.textContent=t.value? t.value+' '+u.toLowerCase():''; }
   }
 });
 
