@@ -80,7 +80,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <div id="status" style="padding:6px 12px;border-radius:999px;font-weight:700;font-size:12px;background:#fef9c3;color:#854d0e">🟢 Connecté</div>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
   <button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">V34 FINAL - Admin + 3 Equipes Login + Stock Machines + Tringle</small>
+  <small style="opacity:.8">V35 FINAL - Zone 5/6 Dimension Mesure Dropdown + Admin + Stock Machines</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -170,10 +170,11 @@ function view(){
   let html=`<h2>Zone provisoire 6 - Produits retournés (SANS MACHINES)</h2>
   <p class="n">Dans la zone on n'a pas de machine, que le produit indiqué - Chaque produit dans une case</p>
   <div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap"><button id="addRowP6" class="btn" style="background:#10b981">+ Ajouter ligne</button><button id="delRowP6" class="btn" style="background:#ef4444">- Supprimer dernière ligne</button></div>
-  <div class="w"><table><tr><th>#</th><th>Flanc en bobine</th><th>Flanc en pièce</th><th>Bond de roulement</th><th>Apex pièce</th><th>Apex talon</th><th>Apex ceinture</th><th>Date entrée zone prov</th><th>Date entrée DLS</th><th>N° carte qualité</th><th>Photo carte qualité</th></tr>`;
+  <div class="w"><table><tr><th>#</th><th style='min-width:140px'>📏 Dimension / Mesure</th><th>Flanc en bobine</th><th>Flanc en pièce</th><th>Bond de roulement</th><th>Apex pièce</th><th>Apex talon</th><th>Apex ceinture</th><th>Date entrée zone prov</th><th>Date entrée DLS</th><th>N° carte qualité</th><th>Photo carte qualité</th></tr>`;
   const rowsP6 = S.z6rows || [{id:1}];
   rowsP6.forEach((row, idx)=>{
     html+=`<tr><td style="font-weight:700;background:#f4f5f7">${idx+1}</td>`;
+    html+=`<td><select data-z6m="${row.id}|mes" style="padding:6px;border:1px solid var(--bd);border-radius:6px;min-width:130px;font-weight:600">${opts((S.z6m && S.z6m[row.id+"|mes"])||"")}</select></td>`;
     html+=`<td><input class="s" data-z6="${row.id}|fb" value="${(S.z6 && S.z6[row.id+"|fb"])||""}" placeholder="Qté" style="width:80px"></td>`;
     html+=`<td><input class="s" data-z6="${row.id}|fp" value="${(S.z6 && S.z6[row.id+"|fp"])||""}" placeholder="Qté" style="width:80px"></td>`;
     html+=`<td><input class="s" data-z6="${row.id}|br" value="${(S.z6 && S.z6[row.id+"|br"])||""}" placeholder="Qté" style="width:80px"></td>`;
@@ -194,10 +195,11 @@ function view(){
   let html=`<h2>Zone 5 BAT5 - Produits retournés (SANS MACHINES)</h2>
   <p class="n">Dans la zone on n'a pas de machine, que le produit indiqué</p>
   <div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap"><button id="addRowB5" class="btn" style="background:#10b981">+ Ajouter ligne</button><button id="delRowB5" class="btn" style="background:#ef4444">- Supprimer</button></div>
-  <div class="w"><table><tr><th>#</th><th>Band de roulement</th><th>Flanc en bobine</th><th>Flanc en pièce</th><th>Tringles tourisme</th><th>Tringles poids lourds</th><th>Apex talon</th><th>Apex ceinture</th><th>Apex bobine</th><th>Ceinture</th><th>Napollo</th><th>Vérifier conforme</th><th>Nom non conforme</th><th>N° carte qualité</th><th>Photo</th></tr>`;
+  <div class="w"><table><tr><th>#</th><th style='min-width:140px'>📏 Dimension / Mesure</th><th>Band de roulement</th><th>Flanc en bobine</th><th>Flanc en pièce</th><th>Tringles tourisme</th><th>Tringles poids lourds</th><th>Apex talon</th><th>Apex ceinture</th><th>Apex bobine</th><th>Ceinture</th><th>Napollo</th><th>Vérifier conforme</th><th>Nom non conforme</th><th>N° carte qualité</th><th>Photo</th></tr>`;
   const rowsB5 = S.z5rows || [{id:1}];
   rowsB5.forEach((row, idx)=>{
     html+=`<tr><td style="font-weight:700;background:#f4f5f7">${idx+1}</td>`;
+    html+=`<td><select data-z5m="${row.id}|mes" style="padding:6px;border:1px solid #1e40af;border-radius:6px;min-width:130px;font-weight:700;background:#eff6ff">${opts((S.z5m && S.z5m[row.id+"|mes"])||"")}</select></td>`;
     ["br_bat5","fb_bat5","fp_bat5","tt_tour","tt_pl","at_bat5","ac_bat5","ab_bat5","ceint","nap"].forEach(k=>{
       html+=`<td><input class="s" data-z5="${row.id}|${k}" value="${(S.z5 && S.z5[row.id+"|"+k])||""}" placeholder="Qté" style="width:60px"></td>`;
     });
@@ -279,6 +281,22 @@ document.addEventListener("change", e=>{
     save();
     return;
   }
+  if(t.dataset.z5m){
+    const key=t.dataset.z5m;
+    S.z5m=S.z5m||{};
+    S.z5m[key]=t.value;
+    save();
+    view();
+    return;
+  }
+  if(t.dataset.z6m){
+    const key=t.dataset.z6m;
+    S.z6m=S.z6m||{};
+    S.z6m[key]=t.value;
+    save();
+    view();
+    return;
+  }
   if(t.dataset.u){
     const id=t.dataset.u;
     S.un=S.un||{};
@@ -320,7 +338,7 @@ let currentRoom="STIP-BAT6"; let lastPush=0; let isRemote=false; let polling=nul
 async function fetchRemote(room){ try{ const res=await fetch(docUrl(room)); if(res.status===404) return null; if(!res.ok) throw new Error("HTTP "+res.status); const j=await res.json(); if(!j.fields||!j.fields.data) return null; return JSON.parse(j.fields.data.stringValue); }catch(e){ return null; } }
 async function pushRemote(room,data){ try{ const payload={fields:{data:{stringValue:JSON.stringify(data)}, room:{stringValue:room}, updatedAt:{timestampValue:new Date().toISOString()}}}; const res=await fetch(docUrl(room),{method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)}); if(!res.ok) throw new Error("Push "+res.status); lastPush=Date.now(); setStatus("🟢 Connecté: "+room.toUpperCase(),"ok"); return true; }catch(e){ setStatus("🟢 Connecté (local)","ok"); return true; } }
 function setStatus(t,type){ const el=document.getElementById("status"); if(!el) return; el.textContent=t; el.style.background=type==="ok"?"#dcfce7":type==="err"?"#fee2e2":"#fef9c3"; el.style.color=type==="ok"?"#166534":type==="err"?"#991b1b":"#854d0e"; }
-async function syncLoop(){ const remote=await fetchRemote(currentRoom); if(remote){ const localStr=JSON.stringify(S); const remoteStr=JSON.stringify(remote); if(localStr!==remoteStr && Date.now()-lastPush>2000 && !isRemote){ isRemote=true; S=remote; S.m=S.m||{}; S.st=S.st||{}; S.ov=S.ov||{}; S.un=S.un||{}; S.log=S.log||[]; S.z6=S.z6||{}; S.z6d=S.z6d||{}; S.z6c=S.z6c||{}; S.z6photos=S.z6photos||{}; S.z5=S.z5||{}; S.z5c=S.z5c||{}; S.z5photos=S.z5photos||{}; S.z6rows=S.z6rows||[{id:1}]; S.z5rows=S.z5rows||[{id:1}]; localStorage.setItem("stp_machines_v1", JSON.stringify(S)); view(); setStatus("🟢 Connecté: "+room.toUpperCase()+" • maj reçue","ok"); isRemote=false; }else{ setStatus("🟢 Connecté: "+room.toUpperCase(),"ok"); } }else{ await pushRemote(currentRoom,S); } }
+async function syncLoop(){ const remote=await fetchRemote(currentRoom); if(remote){ const localStr=JSON.stringify(S); const remoteStr=JSON.stringify(remote); if(localStr!==remoteStr && Date.now()-lastPush>2000 && !isRemote){ isRemote=true; S=remote; S.m=S.m||{}; S.st=S.st||{}; S.ov=S.ov||{}; S.un=S.un||{}; S.log=S.log||[]; S.z6=S.z6||{}; S.z6d=S.z6d||{}; S.z6c=S.z6c||{}; S.z6photos=S.z6photos||{}; S.z5=S.z5||{}; S.z5c=S.z5c||{}; S.z5photos=S.z5photos||{}; S.z5m=S.z5m||{}; S.z6m=S.z6m||{}; S.z6rows=S.z6rows||[{id:1}]; S.z5rows=S.z5rows||[{id:1}]; localStorage.setItem("stp_machines_v1", JSON.stringify(S)); view(); setStatus("🟢 Connecté: "+room.toUpperCase()+" • maj reçue","ok"); isRemote=false; }else{ setStatus("🟢 Connecté: "+room.toUpperCase(),"ok"); } }else{ await pushRemote(currentRoom,S); } }
 function startPolling(){ if(polling) clearInterval(polling); polling=setInterval(syncLoop,3000); syncLoop(); }
 const _origSave = save; save = function(){ _origSave(); if(!isRemote) pushRemote(currentRoom,S); };
 let _joinBtn = document.getElementById("joinBtn");
