@@ -317,8 +317,8 @@ function showUserInfo(){
   if(bar){
     const info = document.createElement('div');
     info.id='userInfo';
-    info.style.cssText='background:#0f172a;color:#fff;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:700;display:flex;gap:8px;align-items:center';
-    info.innerHTML=`👤 ${currentUser.name} | 🪪 ${currentUser.card} | 🏭 P${currentUser.poste} <button onclick="logout()" style="background:#ef4444;color:#fff;border:0;padding:2px 8px;border-radius:999px;font-size:10px">Déconnexion</button>`;
+    info.style.cssText='position:fixed;top:60px;right:10px;z-index:100;background:#0f172a;color:#fff;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:700;display:flex;gap:8px;align-items:center;box-shadow:0 4px 12px rgba(0,0,0,0.3);border:2px solid #fff';
+    info.innerHTML=`👤 ${currentUser.name} | 🪪 ${currentUser.card} | 🏭 P${currentUser.poste} <button onclick="logout()" style="background:#ef4444;color:#fff;border:0;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:800;cursor:pointer">Déconnexion</button>`;
     // remove old
     const old=document.getElementById('userInfo'); if(old) old.remove();
     bar.appendChild(info);
@@ -333,9 +333,31 @@ function showUserInfo(){
 }
 
 function logout(){
-  localStorage.removeItem('stip_auth_user');
-  location.reload();
+  try{
+    localStorage.removeItem('stip_auth_user');
+    localStorage.removeItem('stip_current_poste');
+    sessionStorage.clear();
+  }catch(e){}
+  // Force show auth screen
+  const authScreen=document.getElementById('authScreen');
+  if(authScreen){ authScreen.style.display='flex'; }
+  const userInfo=document.getElementById('userInfo');
+  if(userInfo) userInfo.remove();
+  currentUser=null;
+  // Clear inputs
+  const c=document.getElementById('authCard'); if(c) c.value='';
+  const p=document.getElementById('authCode'); if(p) p.value='';
+  // Reload after short delay
+  setTimeout(()=>{ location.reload(); }, 300);
 }
+// Also add emergency logout via double-click on header
+document.addEventListener('DOMContentLoaded', ()=>{
+  const header=document.getElementById('stipHeader');
+  if(header){
+    header.addEventListener('dblclick', ()=>{ if(confirm('Déconnexion?')) logout(); });
+  }
+});
+
 
 function initAuth(){
   const btn=document.getElementById('authBtn');
