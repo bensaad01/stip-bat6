@@ -226,5 +226,23 @@ if(posteInput){
   });
 }
 
-</script></body></html>
-
+</script>
+<script>
+// FIX DATE & HEURE - FORCE
+(function(){
+  function fixDate(){
+    try{
+      const now=new Date();
+      const d=document.getElementById('liveDate');
+      const t=document.getElementById('liveTime');
+      if(d){ d.textContent='📅 '+now.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+      if(t){ t.textContent='🕐 '+now.toLocaleTimeString('fr-FR'); }
+    }catch(e){}
+  }
+  setInterval(fixDate,1000);
+  fixDate();
+  setTimeout(fixDate,500);
+  setTimeout(fixDate,1500);
+})();
+</script>
+</body></html>
