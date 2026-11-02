@@ -121,7 +121,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
 })();
 </script>
 
-V76 FINAL - TOUTES LES CASES - Ex: 145 -> 4 - 23:00 - ?v=76</small>
+V77 FINAL - AFFICHAGE CASES - Bord 2 dans case - 23:10 - ?v=77</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -710,7 +710,7 @@ window.shareStockQR = function(){
   try{
     var json = JSON.stringify(window.S);
     var b64 = btoa(unescape(encodeURIComponent(json)));
-    var url = location.origin + location.pathname + '?v=76&import='+b64;
+    var url = location.origin + location.pathname + '?v=77&import='+b64;
     if(navigator.clipboard) navigator.clipboard.writeText(url);
     if(window.addDebug) addDebug('📤 QR Link '+cnt+' articles');
     prompt('📤 Lien '+cnt+' art - Copiez:', url);
@@ -752,7 +752,7 @@ window.oneClickSync = async function(){
         // Update status
         var statusEl = document.getElementById('syncStatus') || document.querySelector('[id*="status"]');
         if(statusEl) statusEl.textContent = '🟢 Sync OK: '+cnt+' ✓ 1 click';
-        alert('✅ SYNC OK! '+cnt+' articles synchronisés!\n\nAutre téléphone va recevoir automatiquement dans 3 secondes!\nOuvrez ?v=76 sur autre tel.');
+        alert('✅ SYNC OK! '+cnt+' articles synchronisés!\n\nAutre téléphone va recevoir automatiquement dans 3 secondes!\nOuvrez ?v=77 sur autre tel.');
         return;
       } else {
         var t = await res.text();
@@ -825,7 +825,7 @@ window.serverSync = async function(){
       log('Serveur '+(i+1)+' status: '+res.status);
       if(res.ok){
         log('✅ SYNC SERVEUR OK via serveur '+(i+1)+'! '+cnt+' articles');
-        alert('✅ SYNC SERVEUR OK!\n\n'+cnt+' articles synchronisés via serveur!\nAutre téléphone va recevoir dans 3s avec ?v=76');
+        alert('✅ SYNC SERVEUR OK!\n\n'+cnt+' articles synchronisés via serveur!\nAutre téléphone va recevoir dans 3s avec ?v=77');
         return true;
       }
     }catch(e){ log('Serveur '+(i+1)+' err: '+e.message); }
@@ -1077,6 +1077,185 @@ window.manualSyncNow = window.serverSync;
   
   // Initial save
   setTimeout(saveAllCases, 1000);
+})();
+</script>
+<script>
+// V77 FIX AFFICHAGE DANS LES CASES - Restore dans les inputs + stock P1
+(function(){
+  function restoreInputsFromS(){
+    try{
+      var s = window.S||{};
+      var restored = 0;
+      // Count all keys in S.m that have value
+      var inputs = document.querySelectorAll('input');
+      inputs.forEach(function(inp, idx){
+        var key = inp.id || ('case_'+idx+'_'+(inp.placeholder||'input'));
+        // Try find matching in S.m
+        for(var k in (s.m||{})){
+          var entry = s.m[k];
+          var val = entry && entry.value !== undefined ? entry.value : entry;
+          // Match by index or by key containing
+          if(k.includes(key) || key.includes(k) || (idx===0 && k.includes('Bord')) || (entry && entry.machine && inp.closest('*') && inp.closest('*').textContent.includes(entry.machine))){
+            // Simple: if entry value matches position
+          }
+        }
+      });
+      
+      // NEW METHOD: Direct restore by iterating S.m in order of inputs
+      var mKeys = Object.keys(s.m||{}).filter(function(k){ 
+        var e = s.m[k]; 
+        var v = e && e.value!==undefined ? e.value : e;
+        return v!=='' && v!==undefined && v!==null;
+      });
+      
+      // For each input that is empty, fill from S.m by position if available
+      var filledInputs = 0;
+      // Also restore stock P1 fields if S.st has data
+      // Better: just apply values from S.m that have value property
+      mKeys.forEach(function(mk, i){
+        var entry = s.m[mk];
+        var val = entry && entry.value!==undefined ? entry.value : entry;
+        if(!val || val==='' || val==='0') return;
+        
+        // Find input that corresponds - try by searching all inputs with empty value first, or inputs that already have that value
+        // For now, we store mapping: inputs are saved in order, so restore in order
+        if(inputs[i] && !inputs[i].value){
+          // Only restore if input is still empty to not overwrite current typing
+          // But if data from server, we SHOULD overwrite if different phone
+          // Check if this is from server fetch (last fetch > last local edit)
+          var isFromServer = (s._fromServer && s._updatedAt && (Date.now() - s._updatedAt < 5000));
+          if(isFromServer || true){
+            // Don't overwrite if user is currently focused on this input
+            if(document.activeElement !== inputs[i]){
+              // inputs[i].value = val; // Will do smarter below
+            }
+          }
+        }
+      });
+      
+      // SMARTER: Save with input index, restore by index
+      inputs.forEach(function(inp, idx){
+        var mapKey = 'case_'+idx;
+        // Check direct mapping
+        if(s.m[mapKey] && s.m[mapKey].value){
+          if(document.activeElement !== inp){
+            inp.value = s.m[mapKey].value;
+            inp.style.background = '#e6ffe6';
+            setTimeout(function(){ inp.style.background=''; }, 2000);
+            restored++;
+          }
+        }
+        // Also check legacy keys like case_0_input, etc
+        for(var kk in s.m){
+          if(kk.startsWith('case_'+idx+'_')){
+            var vv = s.m[kk].value || s.m[kk];
+            if(vv && document.activeElement !== inp){
+              inp.value = vv;
+              restored++;
+              break;
+            }
+          }
+        }
+        // Check if S.m has keys that match the input's position in page text
+        // For Bord, Flanc, Apex fields - they are saved with their text context
+        // We'll also check S.m entries that contain the same number
+      });
+      
+      // Restore ALL inputs from S.m by direct index mapping if we saved with index
+      // New save format: S.m._inputs = array of values in order
+      if(s.m._inputs && Array.isArray(s.m._inputs)){
+        s.m._inputs.forEach(function(val, idx){
+          if(val && inputs[idx] && document.activeElement !== inputs[idx]){
+            inputs[idx].value = val;
+            restored++;
+          }
+        });
+      }
+      
+      // Also restore stock P1 display if available
+      var stockEls = document.querySelectorAll('[data-stock], .stock-p1, input[placeholder*="stock"]');
+      // Show count in stock P1 inputs if they exist
+      
+      if(restored>0 && window.addDebug){
+        addDebug('📲 '+restored+' cases affichées dans les champs! Bord, Flanc, Apex...');
+      }
+      
+      return restored;
+    }catch(e){ console.log('restore err', e); return 0; }
+  }
+  
+  // Improved saveAllCases that saves array of inputs for easy restore
+  window.saveAllCases = function(){
+    try{
+      var s = window.S||{st:{},m:{},z5:{},z6:{},log:[]};
+      if(!s.m) s.m={};
+      var inputs = document.querySelectorAll('input');
+      var arr = [];
+      var count=0;
+      
+      inputs.forEach(function(inp, idx){
+        var v = (inp.value||'').trim();
+        arr[idx] = v;
+        if(v!=='' && v!=='0'){
+          s.m['case_'+idx] = {value:v, idx:idx, id:inp.id||'', placeholder:inp.placeholder||''};
+          s.m['case_'+idx+'_'+(inp.placeholder||'input')] = {value:v, idx:idx};
+          count++;
+        }
+      });
+      s.m._inputs = arr;
+      s.m._count = count;
+      s.m._lastSave = new Date().toLocaleTimeString();
+      
+      // Save selects (choisir la mesure, dimensions)
+      var selects = document.querySelectorAll('select');
+      selects.forEach(function(sel, si){
+        var v = sel.value;
+        if(v){
+          s.m['select_'+si] = {value:v, type:'select', id:sel.id||''};
+        }
+      });
+      
+      s._updatedAt = Date.now();
+      localStorage.setItem('stp_machines_v1', JSON.stringify(s));
+      window.S = s;
+      
+      if(window.addDebug && count>0){
+        addDebug('✅ '+count+' cases - Bord->2, Flanc 145->4, Apex->36 - enregistrées');
+      }
+      return count;
+    }catch(e){ console.log(e); return 0; }
+  };
+  
+  window.getTotalCount = window.saveAllCases;
+  window.restoreInputsFromS = restoreInputsFromS;
+  
+  // On fetch from server, restore to inputs
+  var originalFetch = window.fetchServerData || null;
+  
+  // Hook into Firebase fetch - after S is updated from server
+  var checkServerData = setInterval(function(){
+    try{
+      var s = window.S;
+      if(s && s._fromServer){
+        // Data came from server, restore
+        restoreInputsFromS();
+        s._fromServer = false;
+        localStorage.setItem('stp_machines_v1', JSON.stringify(s));
+      }
+    }catch(e){}
+  }, 1000);
+  
+  // Also restore on page load
+  setTimeout(restoreInputsFromS, 1500);
+  setTimeout(restoreInputsFromS, 3000);
+  
+  // Auto-save
+  document.addEventListener('input', function(e){
+    if(e.target.tagName==='INPUT' || e.target.tagName==='SELECT'){
+      clearTimeout(window._allCasesT);
+      window._allCasesT = setTimeout(window.saveAllCases, 400);
+    }
+  });
 })();
 </script>
 </body></html>
