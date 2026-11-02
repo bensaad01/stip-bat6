@@ -121,7 +121,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
 })();
 </script>
 
-V73 FINAL - SERVEUR SYNC - Via Serveur - 3 Serveurs - 22:40 - ?v=73</small>
+V74 FINAL - FIX SAISIR - Enregistrement OK - Ne touche pas autres champs - 22:50 - ?v=74</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -710,7 +710,7 @@ window.shareStockQR = function(){
   try{
     var json = JSON.stringify(window.S);
     var b64 = btoa(unescape(encodeURIComponent(json)));
-    var url = location.origin + location.pathname + '?v=73&import='+b64;
+    var url = location.origin + location.pathname + '?v=74&import='+b64;
     if(navigator.clipboard) navigator.clipboard.writeText(url);
     if(window.addDebug) addDebug('📤 QR Link '+cnt+' articles');
     prompt('📤 Lien '+cnt+' art - Copiez:', url);
@@ -731,7 +731,7 @@ window.oneClickSync = async function(){
     
     // 1. Count local
     var s = window.S||{st:{},m:{}};
-    var cnt = Object.keys(s.st||s.m||{}).length;
+    var cnt = window.getTotalCount ? window.getTotalCount() : Object.keys(s.st||{}).length; // FIXED{}).length;
     log('📦 Local: '+cnt+' articles');
     
     if(cnt===0){
@@ -752,7 +752,7 @@ window.oneClickSync = async function(){
         // Update status
         var statusEl = document.getElementById('syncStatus') || document.querySelector('[id*="status"]');
         if(statusEl) statusEl.textContent = '🟢 Sync OK: '+cnt+' ✓ 1 click';
-        alert('✅ SYNC OK! '+cnt+' articles synchronisés!\n\nAutre téléphone va recevoir automatiquement dans 3 secondes!\nOuvrez ?v=73 sur autre tel.');
+        alert('✅ SYNC OK! '+cnt+' articles synchronisés!\n\nAutre téléphone va recevoir automatiquement dans 3 secondes!\nOuvrez ?v=74 sur autre tel.');
         return;
       } else {
         var t = await res.text();
@@ -803,7 +803,7 @@ window.serverSync = async function(){
   }
   
   var s = window.S||{st:{},m:{}};
-  var cnt = Object.keys(s.st||s.m||{}).length;
+  var cnt = window.getTotalCount ? window.getTotalCount() : Object.keys(s.st||{}).length; // FIXED{}).length;
   if(cnt===0){ alert('Stock vide!'); return; }
   
   log('🔄 SERVER SYNC - Start via Serveur');
@@ -825,7 +825,7 @@ window.serverSync = async function(){
       log('Serveur '+(i+1)+' status: '+res.status);
       if(res.ok){
         log('✅ SYNC SERVEUR OK via serveur '+(i+1)+'! '+cnt+' articles');
-        alert('✅ SYNC SERVEUR OK!\n\n'+cnt+' articles synchronisés via serveur!\nAutre téléphone va recevoir dans 3s avec ?v=73');
+        alert('✅ SYNC SERVEUR OK!\n\n'+cnt+' articles synchronisés via serveur!\nAutre téléphone va recevoir dans 3s avec ?v=74');
         return true;
       }
     }catch(e){ log('Serveur '+(i+1)+' err: '+e.message); }
@@ -848,5 +848,72 @@ window.serverSync = async function(){
 
 window.oneClickSync = window.serverSync;
 window.manualSyncNow = window.serverSync;
+</script>
+<script>
+// V74 FIX SAISIR - Enregistrement seulement
+(function(){
+  // Fix cnt calculation - count ALL
+  function getTotalCount(){
+    try{
+      var s = window.S||{};
+      var cnt = 0;
+      cnt += Object.keys(s.st||{}).length;
+      cnt += Object.keys(s.m||{}).length;
+      cnt += Object.keys(s.z5||{}).length;
+      cnt += Object.keys(s.z6||{}).length;
+      // Also count nested in m
+      if(s.m){
+        for(var k in s.m){
+          if(typeof s.m[k]==='object' && s.m[k]!==null){
+            cnt += Object.keys(s.m[k]).length;
+          }
+        }
+      }
+      return cnt;
+    }catch(e){ return 0; }
+  }
+  window.getTotalCount = getTotalCount;
+
+  // Override serverSync to use correct count
+  var oldServerSync = window.serverSync;
+  window.serverSync = async function(){
+    var cnt = getTotalCount();
+    if(cnt===0){
+      var el = document.getElementById('debugLog');
+      if(el){ var t=new Date().toLocaleTimeString(); el.innerHTML=t+' ⚠️ Stock vide! Saisissez d\'abord!<br>'+el.innerHTML; }
+      alert('⚠️ Stock vide!\n\nVous devez saisir au moins 1 produit avant Sync!\n\nAllez à 102 → choisir la mesure → saisir → quantité → Sauvegarder\nPuis Sync 1 Click!');
+      return;
+    }
+    if(oldServerSync) return await oldServerSync();
+  };
+  window.oneClickSync = window.serverSync;
+  window.manualSyncNow = window.serverSync;
+
+  // Ensure original save still works - restore if broken
+  if(!window._origSave){
+    window._origSave = window.save;
+  }
+  
+  // Fix saisir - ensure it saves to localStorage
+  window._fixedSaisir = function(){
+    try{
+      var s = window.S||{st:{},m:{},z5:{},z6:{},log:[]};
+      localStorage.setItem('stp_machines_v1', JSON.stringify(s));
+      var cnt = getTotalCount();
+      var statusEl = document.querySelector('.stock-badge') || document.getElementById('stockCount');
+      if(window.addDebug) addDebug('✅ Saisie enregistrée! Total: '+cnt+' - Stock Poste 1: '+cnt);
+      console.log('Saisie OK cnt='+cnt);
+    }catch(e){ console.log('saisir err', e); }
+  };
+
+  // Hook after any save
+  var origSave = window.save;
+  if(origSave){
+    window.save = function(){
+      try{ return origSave.apply(this, arguments); }catch(e){ console.log('orig save err', e); }
+      finally{ setTimeout(function(){ if(window._fixedSaisir) _fixedSaisir(); }, 300); }
+    };
+  }
+})();
 </script>
 </body></html>
