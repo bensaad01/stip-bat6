@@ -50,10 +50,10 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
           <option value="all">Admin - Tous les postes</option>
         </select>
       </div>
-      <button id="authBtn" style="background:#0f172a;color:#fff;border:0;padding:14px;border-radius:10px;font-size:16px;font-weight:800;margin-top:8px">🔓 Connexion</button>
+      <button type="button" onclick="document.getElementById(\'authCard\').value=\'ADMIN\'; document.getElementById(\'authCode\').value=\'admin123\'; document.getElementById(\'authPoste\').value=\'all\'; document.getElementById(\'authBtn\').click();" style="background:#f59e0b;color:#000;padding:10px 16px;border-radius:10px;border:0;font-weight:900;width:100%;margin-bottom:10px">⚡ Connexion ADMIN Rapide (1 click)</button><button id="authBtn" style="background:#0f172a;color:#fff;border:0;padding:14px;border-radius:10px;font-size:16px;font-weight:800;margin-top:8px">🔓 Connexion</button>
       <div id="authError" style="display:none;background:#fee2e2;color:#991b1b;padding:10px;border-radius:8px;font-size:13px;text-align:center;font-weight:600"></div>
       <div style="background:#f1f5f9;padding:10px;border-radius:8px;font-size:11px;color:#475569">
-        <b>Cartes de test:</b><br>
+        <b><div style="display:flex;gap:6px;margin-bottom:10px"><button type="button" onclick="emergencyReset()" style="background:#ef4444;color:#fff;padding:10px;border-radius:10px;border:0;font-weight:900;font-size:12px;flex:1">🗑️ RESET TOTAL</button><button type="button" onclick="fixAllData()" style="background:#3b82f6;color:#fff;padding:10px;border-radius:10px;border:0;font-weight:900;font-size:12px;flex:1">🔧 Réparer</button></div>Cartes de test:</b><br>
         BAT6-001 / 1234 (Poste 1)<br>
         BAT6-002 / 5678 (Poste 2)<br>
         BAT6-003 / 9999 (Poste 3)<br>
@@ -81,7 +81,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <button id="manualSyncBtn" onclick="window.manualSyncNow()" style="background:#00ff88;color:#000;border:0;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,255,136,0.3)">🔄 Sync maintenant</button>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
   <button onclick="shareStock()" style="padding:6px 10px;background:#f59e0b;color:#000;border-radius:999px;font-weight:900;font-size:11px;border:0">📤 Partager</button><button onclick="exportStockFile()" style="padding:6px 10px;background:#10b981;color:#fff;border-radius:999px;font-weight:900;font-size:11px;border:0">📁 Exporter (50+)</button><button onclick="importStockFile()" style="padding:6px 10px;background:#3b82f6;color:#fff;border-radius:999px;font-weight:900;font-size:11px;border:0">📥 Importer</button><button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">V56 FINAL - Firebase WORKING - Europe - 17:40 - ?v=56</small>
+  <small style="opacity:.8">V58 FINAL - RESET TOTAL - Fix All Data - 18:10 - ?v=58</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -483,7 +483,7 @@ window.shareStock = function(){
   try{
     const json = JSON.stringify(S);
     const b64 = btoa(unescape(encodeURIComponent(json)));
-    const url = location.origin + location.pathname + "?v=56&import=" + b64;
+    const url = location.origin + location.pathname + "?v=58&import=" + b64;
     if(navigator.clipboard) navigator.clipboard.writeText(url);
     prompt("📤 Lien "+count+" art - Copiez et ouvrez sur autre tel:", url);
   }catch(e){ alert(e.message); }
@@ -545,7 +545,7 @@ window.checkImport = function(){
           localStorage.setItem("stp_machines_v1", JSON.stringify(S));
           view();
           alert("✅ Import OK! "+Object.keys(S.st).length);
-          history.replaceState(null,"",location.pathname+"?v=56");
+          history.replaceState(null,"",location.pathname+"?v=58");
         }
       }
     }
@@ -613,6 +613,61 @@ if(posteInput){
 
 <script>
 // V29 AUTH SYSTEM
+
+// V58 EMERGENCY RESET - Fix all corrupted data
+(function(){
+  try{
+    const raw = localStorage.getItem("stp_machines_v1");
+    if(raw){
+      const parsed = JSON.parse(raw);
+      // Check if corrupted
+      if(!parsed || typeof parsed !== 'object' || (!parsed.st && !parsed.m)){
+        console.log("Corrupted data detected - resetting");
+        localStorage.removeItem("stp_machines_v1");
+      }
+    }
+  }catch(e){
+    console.log("Corrupted JSON - clearing", e);
+    try{ localStorage.removeItem("stp_machines_v1"); localStorage.clear(); }catch(ee){}
+  }
+})();
+
+// Robust S init
+if(typeof S === 'undefined' || !S || !S.st){
+  var S = {
+    st: {},
+    m: {},
+    z5: {},
+    z6: {},
+    z5m: {},
+    z6m: {},
+    log: [],
+    _updatedAt: Date.now()
+  };
+  try{ localStorage.setItem("stp_machines_v1", JSON.stringify(S)); }catch(e){}
+}
+
+window.emergencyReset = function(){
+  if(confirm("⚠️ RESET TOTAL?\n\nCela va supprimer TOUTES les données locales et recharger l'application propre!\n\nConfirmer?")){
+    try{
+      localStorage.clear();
+      sessionStorage.clear();
+      alert("✅ Reset OK! Rechargement...");
+      location.href = location.origin + location.pathname + "?v=58&reset=ok";
+    }catch(e){ alert(e.message); location.reload(); }
+  }
+};
+
+window.fixAllData = function(){
+  try{
+    S = { st: S.st||{}, m: S.m||{}, z5: S.z5||{}, z6: S.z6||{}, z5m: S.z5m||{}, z6m: S.z6m||{}, log: S.log||[], _updatedAt: Date.now() };
+    localStorage.setItem("stp_machines_v1", JSON.stringify(S));
+    alert("✅ Données réparées! "+Object.keys(S.st).length+" articles OK");
+    if(typeof view === 'function') view();
+  }catch(e){ alert("Erreur: "+e.message); }
+};
+
+
 const USERS = {
   "BAT6-001": {code:"1234", name:"Agent Poste 1 - Equipe A", poste:"1", role:"user"},
   "BAT6-002": {code:"5678", name:"Agent Poste 2 - Equipe B", poste:"2", role:"user"},
@@ -729,19 +784,31 @@ function initAuth(){
       return;
     }
 
-    const user=USERS[card];
-    if(!user || user.code!==code){
-      err.style.display='block'; err.textContent='❌ Carte ou code incorrect! Accès refusé.';
-      // log failed attempt
-      try{
-        S.log.unshift([new Date().toLocaleString('fr-FR'), 'SECURITE', `Tentative échouée carte ${card}`]);
-        save();
-      }catch(e){}
+    let user=USERS[card];
+    // Try case-insensitive for card
+    if(!user){
+      // Try find card case-insensitive
+      const upper = card.toUpperCase();
+      for(const k in USERS){
+        if(k.toUpperCase()===upper){ user=USERS[k]; break; }
+      }
+    }
+    if(!user){
+      err.style.display='block'; err.textContent='❌ Carte '+card+' inconnue! Cartes: BAT6-001, BAT6-002, BAT6-003, ADMIN';
+      return;
+    }
+    // Code check case-insensitive and trimmed
+    const codeLower = (code||'').trim().toLowerCase();
+    const expectedLower = (user.code||'').toLowerCase();
+    const codeTrimmed = (code||'').trim();
+    if(user.code!==codeTrimmed && expectedLower!==codeLower){
+      err.style.display='block'; 
+      err.innerHTML='❌ Code incorrect pour '+card+'!<br>Attendu: <b>'+user.code+'</b><br>Tapez: <b>admin123</b> en minuscules!<br><br><button onclick="document.getElementById(\'authCode\').value=\'admin123\'; document.getElementById(\'authCode\').type=\'text\';" style="background:#10b981;color:#fff;padding:8px 16px;border-radius:8px;border:0;font-weight:900">📋 Remplir admin123</button>';
       return;
     }
 
-    // Check poste
-    if(user.poste!=='all' && user.poste!==poste && poste!=='all'){
+    // Check poste - ADMIN can access all
+    if(user.poste!=='all' && user.poste!==poste && poste!=='all' && user.role!=='admin'){
       err.style.display='block'; err.textContent=`❌ Carte ${card} autorisée seulement pour Poste ${user.poste}!`;
       return;
     }
