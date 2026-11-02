@@ -80,8 +80,8 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <div id="status" style="padding:6px 12px;border-radius:999px;font-weight:700;font-size:12px;background:#fef9c3;color:#854d0e">🟢 Connecté</div>
   <button id="manualSyncBtn" onclick="window.manualSyncNow()" style="background:#00ff88;color:#000;border:0;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,255,136,0.3)">🔄 Sync maintenant</button>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
-  <button onclick="shareStock()" style="padding:6px 10px;background:#f59e0b;color:#000;border-radius:999px;font-weight:900;font-size:11px;border:0">📤 Partager</button><button onclick="exportStockFile()" style="padding:6px 10px;background:#10b981;color:#fff;border-radius:999px;font-weight:900;font-size:11px;border:0">📁 Exporter (50+)</button><button onclick="importStockFile()" style="padding:6px 10px;background:#3b82f6;color:#fff;border-radius:999px;font-weight:900;font-size:11px;border:0">📥 Importer</button><button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">V54 FINAL - Firebase Europe OK - 50+ Prod - ?v=54</small>
+  <button onclick="shareStock()" style="padding:6px 10px;background:#f59e0b;color:#000;border-radius:999px;font-weight:900;font-size:11px;border:0">📤 Partager</button><button onclick="exportStockFile()" style="padding:6px 10px;background:#10b981;color:#fff;border-radius:999px;font-weight:900;font-size:11px;border:0">📁 Exporter (50+)</button><button onclick="importStockFile()" style="padding:6px 10px;background:#3b82f6;color:#fff;border-radius:999px;font-weight:900;font-size:11px;border:0">📥 Importer</button><div id="debugLog" style="background:#000;color:#0f0;font-size:9px;padding:6px;border-radius:6px;max-height:80px;overflow:auto;width:100%;margin:4px 0;display:block">Debug: waiting...</div><button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
+  <small style="opacity:.8">V55 FINAL - Firebase Debug + Logs - 17:10 - ?v=55</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -339,56 +339,63 @@ function docUrl(room){ const id=room.trim().toLowerCase(); return "https://fires
 function rtdbUrl(room){ const id=room.trim().toLowerCase(); return "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app/rooms/"+id+".json"; }
 function rtdbUrlUS(room){ const id=room.trim().toLowerCase(); return "https://stip-bat6-default-rtdb.firebaseio.com/rooms/"+id+".json"; }
 
-async function fetchRemote(room){
-  // Try RTDB Europe first
-  try{
-    const url = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app/rooms/"+room.trim().toLowerCase()+".json?t="+Date.now();
-    const res=await fetch(url, {cache:"no-store", mode:"cors"});
-    if(res.ok){ const d=await res.json(); if(d && d.st){ console.log("RTDB EU OK", Object.keys(d.st).length); return d; } }
-  }catch(e){ console.log("RTDB EU err", e.message); }
-  // Try US
-  try{
-    const res=await fetch("https://stip-bat6-default-rtdb.firebaseio.com/rooms/"+room.trim().toLowerCase()+".json?t="+Date.now(), {cache:"no-store"});
-    if(res.ok){ const d=await res.json(); if(d && d.st) return d; }
-  }catch(e){}
-  // Try Firestore
-  try{
-    const res=await fetch(docUrl(room)+"?t="+Date.now(), {cache:"no-store"});
-    if(res.ok){ const j=await res.json(); if(j.fields && j.fields.data){ return JSON.parse(j.fields.data.stringValue); } }
-  }catch(e){}
-  return null;
+
+
+function addDebug(msg){
+  const el=document.getElementById('debugLog');
+  if(el){ el.innerHTML = new Date().toLocaleTimeString()+' '+msg+'<br>'+el.innerHTML; el.style.display='block'; }
+  console.log("[DEBUG] "+msg);
 }
+
 async function pushRemote(room,data){
   let ok=false;
   let log="";
+  const count = Object.keys(data.st||{}).length;
+  addDebug("📤 Push "+count+" art to EU");
   try{
     const url = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app/rooms/"+room.trim().toLowerCase()+".json";
+    addDebug("URL: "+url.substring(0,60));
     const res=await fetch(url, {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data), mode:"cors"});
-    if(res.ok){ ok=true; log="RTDB EU OK"; console.log("Push EU OK"); }
-    else { const t=await res.text(); log="EU "+res.status+" "+t.substring(0,50); }
-  }catch(e){ log="EU err "+e.message; }
-  if(!ok){
-    try{
-      const res=await fetch("https://stip-bat6-default-rtdb.firebaseio.com/rooms/"+room.trim().toLowerCase()+".json", {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data)});
-      if(res.ok){ ok=true; log="US OK"; }
-    }catch(e){}
+    addDebug("Res status: "+res.status);
+    if(res.ok){ 
+      ok=true; log="RTDB EU OK"; 
+      addDebug("✅ Push EU OK "+count);
+    } else { 
+      const t=await res.text();
+      log="EU "+res.status+" "+t.substring(0,80);
+      addDebug("❌ EU fail "+res.status+" "+t.substring(0,100));
+    }
+  }catch(e){ 
+    log="EU err "+e.message; 
+    addDebug("❌ EU exception "+e.message);
   }
-  try{
-    const payload={fields:{data:{stringValue:JSON.stringify(data)}, updatedAt:{timestampValue:new Date().toISOString()}}};
-    const res=await fetch(docUrl(room), {method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)});
-    if(res.ok) ok=true;
-  }catch(e){}
-  if(ok){ setStatus("🟢 Firebase: "+Object.keys(data.st||{}).length+" sync ✓ "+log, "ok"); }
-  else { setStatus("⚠️ Local: "+Object.keys(data.st||{}).length+" - "+log, "err"); }
+  if(!ok){
+    addDebug("Try US...");
+    try{
+      const url2 = "https://stip-bat6-default-rtdb.firebaseio.com/rooms/"+room.trim().toLowerCase()+".json";
+      const res=await fetch(url2, {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data)});
+      addDebug("US status: "+res.status);
+      if(res.ok){ ok=true; log="US OK"; addDebug("✅ Push US OK"); }
+    }catch(e){ addDebug("US err "+e.message); }
+  }
+  if(ok){
+    setStatus("🟢 Firebase: "+count+" sync ✓ "+log, "ok");
+  } else {
+    setStatus("⚠️ Local: "+count+" - "+log+" - Utilisez 📁 Exporter", "err");
+    addDebug("⚠️ Fallback local - Rules? Vérifiez Firebase Console > RTDB > Règles");
+  }
   return ok;
 }
+
+
+
 
 // QR Share - Works 100% without Firebase
 window.shareStock = function(){
   try{
     const json = JSON.stringify(S);
     const b64 = btoa(unescape(encodeURIComponent(json)));
-    const url = location.origin + location.pathname + "?v=54&import=" + b64;
+    const url = location.origin + location.pathname + "?v=55&import=" + b64;
     // Copy to clipboard
     if(navigator.clipboard){ navigator.clipboard.writeText(url); }
     prompt("📤 رابط المشاركة - انسخه وافتحه في الهاتف الآخر:\n\n(يعمل 100% بدون Firebase)", url);
@@ -407,7 +414,7 @@ window.checkImport = function(){
           localStorage.setItem("stp_machines_v1", JSON.stringify(S));
           view();
           alert("✅ تم الاستيراد! "+Object.keys(S.st).length+" مقالات");
-          history.replaceState(null,"",location.pathname+"?v=54");
+          history.replaceState(null,"",location.pathname+"?v=55");
         }
       }
     }
