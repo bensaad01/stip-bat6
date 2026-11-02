@@ -77,11 +77,12 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
 </div>
 
 <div id="syncBar" style="position:sticky;top:0;z-index:40;background:#0f172a;color:#fff;padding:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-  <div id="status" style="padding:6px 12px;border-radius:999px;font-weight:700;font-size:12px;background:#fef9c3;color:#854d0e">🟢 Connecté</div>
+  <div id="status" style="padding:6px 12px;border-radius:999px;font-weight:700;font-size:12px;background:#fef9c3;color:#854d0e">🟡 Initialisation...</div>
+  <div id="debugLog" style="background:#000;color:#0f0;font-size:9px;padding:6px;border-radius:6px;max-height:90px;overflow:auto;width:100%;order:10;display:block;border:1px solid #333">🚀 V59 Init...</div>
   <button id="manualSyncBtn" onclick="window.manualSyncNow()" style="background:#00ff88;color:#000;border:0;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,255,136,0.3)">🔄 Sync maintenant</button>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
   <button onclick="shareStock()" style="padding:6px 10px;background:#f59e0b;color:#000;border-radius:999px;font-weight:900;font-size:11px;border:0">📤 Partager</button><button onclick="exportStockFile()" style="padding:6px 10px;background:#10b981;color:#fff;border-radius:999px;font-weight:900;font-size:11px;border:0">📁 Exporter (50+)</button><button onclick="importStockFile()" style="padding:6px 10px;background:#3b82f6;color:#fff;border-radius:999px;font-weight:900;font-size:11px;border:0">📥 Importer</button><button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">V58 FINAL - RESET TOTAL - Fix All Data - 18:10 - ?v=58</small>
+  <small style="opacity:.8">V59 FINAL - Firebase WORKING - Europe - 18:30 - ?v=59</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -483,7 +484,7 @@ window.shareStock = function(){
   try{
     const json = JSON.stringify(S);
     const b64 = btoa(unescape(encodeURIComponent(json)));
-    const url = location.origin + location.pathname + "?v=58&import=" + b64;
+    const url = location.origin + location.pathname + "?v=59&import=" + b64;
     if(navigator.clipboard) navigator.clipboard.writeText(url);
     prompt("📤 Lien "+count+" art - Copiez et ouvrez sur autre tel:", url);
   }catch(e){ alert(e.message); }
@@ -545,7 +546,7 @@ window.checkImport = function(){
           localStorage.setItem("stp_machines_v1", JSON.stringify(S));
           view();
           alert("✅ Import OK! "+Object.keys(S.st).length);
-          history.replaceState(null,"",location.pathname+"?v=58");
+          history.replaceState(null,"",location.pathname+"?v=59");
         }
       }
     }
@@ -614,6 +615,110 @@ if(posteInput){
 <script>
 // V29 AUTH SYSTEM
 
+
+// V59 WORKING FIREBASE EUROPE
+const RTDB_EU = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app";
+let fbRoom = "STIP-BAT6";
+let fbLastPush = 0;
+let fbIsRemote = false;
+let fbPolling = null;
+
+function fbUrl(room){ return RTDB_EU + "/rooms/" + room.trim().toLowerCase() + ".json"; }
+
+function fbLog(msg){
+  const el=document.getElementById('debugLog');
+  if(el){ el.innerHTML = new Date().toLocaleTimeString() + " " + msg + "<br>" + el.innerHTML; }
+  console.log("[FB] "+msg);
+}
+
+async function fbPush(room, data){
+  const count = Object.keys(data.st||{}).length;
+  fbLog("📤 Push "+count+" articles");
+  try{
+    const url = fbUrl(room);
+    fbLog("URL EU: "+url.substring(0,60));
+    const res = await fetch(url, {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data)});
+    fbLog("Status: "+res.status);
+    if(res.ok){
+      fbLastPush = Date.now();
+      const el=document.getElementById('status');
+      if(el){ el.textContent="🟢 Firebase EU: "+count+" ✓ sync"; el.style.background="#dcfce7"; el.style.color="#166534"; }
+      fbLog("✅ Push OK "+count);
+      return true;
+    } else {
+      const txt = await res.text();
+      fbLog("❌ Fail "+res.status+" "+txt.substring(0,80));
+      const el=document.getElementById('status');
+      if(el){ el.textContent="⚠️ Err "+res.status+" - Utilisez 📁 Exporter"; el.style.background="#fee2e2"; el.style.color="#991b1b"; }
+      return false;
+    }
+  }catch(e){
+    fbLog("❌ Exception "+e.message);
+    const el=document.getElementById('status');
+    if(el){ el.textContent="⚠️ "+e.message.substring(0,40); el.style.background="#fee2e2"; }
+    return false;
+  }
+}
+
+async function fbFetch(room){
+  fbLog("📥 Fetch "+room);
+  try{
+    const url = fbUrl(room) + "?t="+Date.now();
+    const res = await fetch(url, {cache:"no-store"});
+    fbLog("Fetch status: "+res.status);
+    if(res.ok){
+      const d = await res.json();
+      if(d && d.st){
+        fbLog("✅ Fetch OK "+Object.keys(d.st).length);
+        return d;
+      } else { fbLog("Vide"); }
+    }
+  }catch(e){ fbLog("Fetch err "+e.message); }
+  return null;
+}
+
+async function fbSyncLoop(){
+  try{
+    const remote = await fbFetch(fbRoom);
+    if(remote && remote.st){
+      const localStr = JSON.stringify(S.st);
+      const remoteStr = JSON.stringify(remote.st);
+      if(localStr !== remoteStr && Object.keys(remote.st).length>0 && Date.now()-fbLastPush>3000 && !fbIsRemote){
+        fbLog("🔄 Diff local "+Object.keys(S.st).length+" remote "+Object.keys(remote.st).length);
+        fbIsRemote = true;
+        const before = Object.keys(S.st).length;
+        S.st = {...S.st, ...remote.st};
+        S.m = {...S.m, ...remote.m};
+        S.z5 = {...S.z5, ...remote.z5};
+        S.z6 = {...S.z6, ...remote.z6};
+        S._updatedAt = Date.now();
+        localStorage.setItem("stp_machines_v1", JSON.stringify(S));
+        view();
+        fbLog("✅ Fusion "+before+"→"+Object.keys(S.st).length);
+        const el=document.getElementById('status');
+        if(el){ el.textContent="🟢 Auto-sync +"+(Object.keys(S.st).length-before); el.style.background="#dcfce7"; }
+        fbIsRemote = false;
+      }
+    }
+  }catch(e){ fbLog("Loop err "+e.message); }
+}
+
+function fbStart(){
+  if(fbPolling) clearInterval(fbPolling);
+  fbLog("▶️ Polling 3s start");
+  fbPolling = setInterval(fbSyncLoop, 3000);
+  fbSyncLoop();
+}
+
+window.manualSyncNow = async function(){
+  fbLog("🔄 Manual Sync click");
+  const count = Object.keys(S.st||{}).length;
+  fbLog("Local: "+count);
+  await fbPush(fbRoom, S);
+};
+
+setTimeout(()=>{ fbLog("🚀 V59 Init Europe"); fbStart(); }, 1000);
+
 // V58 EMERGENCY RESET - Fix all corrupted data
 (function(){
   try{
@@ -653,7 +758,7 @@ window.emergencyReset = function(){
       localStorage.clear();
       sessionStorage.clear();
       alert("✅ Reset OK! Rechargement...");
-      location.href = location.origin + location.pathname + "?v=58&reset=ok";
+      location.href = location.origin + location.pathname + "?v=59&reset=ok";
     }catch(e){ alert(e.message); location.reload(); }
   }
 };
