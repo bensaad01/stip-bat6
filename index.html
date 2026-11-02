@@ -81,7 +81,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <button id="manualSyncBtn" onclick="window.manualSyncNow()" style="background:#00ff88;color:#000;border:0;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,255,136,0.3)">🔄 Sync maintenant</button>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
   <button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">V80 FINAL - CLEAN - Stock P1 meme resultat - 23:35 - ?v=80 - Sync Button WORKING + Alert + Merge</small>
+  <small style="opacity:.8">V81 FINAL - FIX HALKA NAKSA - Sync loop - Stock P1 meme resultat - 23:50 - ?v=81 - Sync Button WORKING + Alert + Merge</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -600,8 +600,11 @@ setTimeout(()=>clearInterval(authCheckInterval), 8000);
 </script>
 
 
+
+
+
 <script>
-/* V80 CLEAN SYNC - Stock P1 dans cases - Ne touche pas base */
+/* V81 FIX SYNC LOOP - Halka naksa - Sync stock P1 meme resultat - Ne touche pas data */
 (function(){
   var RTDB = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app/rooms/stip-bat6.json";
   function log(m){
@@ -609,7 +612,7 @@ setTimeout(()=>clearInterval(authCheckInterval), 8000);
     if(!el){
       el=document.createElement('div');
       el.id='debugLog';
-      el.style.cssText='background:#000;color:#0f0;padding:8px;border-radius:8px;font-family:monospace;font-size:11px;max-height:120px;overflow-y:auto;margin:8px 0;white-space:pre-wrap';
+      el.style.cssText='background:#000;color:#0f0;padding:10px;border-radius:10px;font-family:monospace;font-size:11px;max-height:150px;overflow-y:auto;margin:8px 0;white-space:pre-wrap;border:2px solid #10b981';
       var app=document.getElementById('app');
       if(app && app.parentNode) app.parentNode.insertBefore(el, app);
     }
@@ -617,102 +620,165 @@ setTimeout(()=>clearInterval(authCheckInterval), 8000);
     el.innerHTML=t+' '+m+'<br>'+el.innerHTML;
   }
   window.addDebug=log;
-  log('V80 Init - Sync stock P1 - memes cases 2 tel');
-  
+  log('V81 Init - Fix halka naksa - Sync loop 101-109 201-210 z5 z6');
+
   function cntStock(){
     try{
       var s=window.S||{st:{}};
-      var poste=window.currentPoste||'1';
       var st=s.st||{};
       var c=0;
-      for(var k in st){
-        if(st[k] && st[k]!==''){
-          if(k.indexOf('P'+poste+'|')===0 || k.indexOf('P')!==0) c++;
-        }
-      }
+      for(var k in st){ if(st[k] && st[k]!=='' ) c++; }
       return c;
     }catch(e){return 0;}
   }
   window.getTotalCount=cntStock;
-  
-  window.serverSync=async function(){
-    var inputs=document.querySelectorAll('input.s[data-s]');
-    inputs.forEach(function(inp){
-      if(inp.value && inp.value.trim()!==''){
-        if(!window.S) window.S={st:{},m:{}};
-        if(!window.S.st) window.S.st={};
-        window.S.st[inp.dataset.s]=inp.value.trim();
+
+  // SAVE all stock P1 inputs to S.st before sync
+  function saveAllStockInputs(){
+    try{
+      var inputs=document.querySelectorAll('input.s[data-s]');
+      var saved=0;
+      if(!window.S) window.S={st:{},m:{},z5:{},z6:{},log:[]};
+      if(!window.S.st) window.S.st={};
+      inputs.forEach(function(inp){
+        var key=inp.getAttribute('data-s');
+        var val=(inp.value||'').trim();
+        if(key){
+          if(val===''){
+            delete window.S.st[key];
+          }else{
+            window.S.st[key]=val;
+            saved++;
+          }
+        }
+      });
+      if(saved>0 && window.save){
+        window.S._updatedAt=Date.now();
+        save();
+        log('💾 '+saved+' stock P1 sauvés - 101-109 201-210 z5 z6');
       }
-    });
-    if(window.save) save();
+      return saved;
+    }catch(e){log('Save err '+e.message);return 0;}
+  }
+
+  window.serverSync=async function(){
+    saveAllStockInputs();
     var cnt=cntStock();
-    log('SYNC '+cnt+' art Poste '+(window.currentPoste||'1'));
+    log('🔄 SYNC - '+cnt+' articles - Poste '+(window.currentPoste||'1')+' - 101-109 201-210 z5 z6');
     if(cnt===0){
-      log('Stock vide');
-      alert('Stock vide! Saisissez stock P1');
-      return;
+      log('⚠️ Stock vide - Saisissez dans stock P1');
+      alert('Stock vide!\nSaisissez dans cases stock P1:\nEx: 104 -> 135/80 R13 -> stock P1 =5\nPuis Sync');
+      return false;
     }
     try{
+      // Push entire S (but only st,m,z5,z6 are important, rest is base - we keep base as is)
+      log('📤 Push vers serveur Europe...');
       var res=await fetch(RTDB,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(window.S)});
-      log('Status '+res.status);
+      log('📡 Status: '+res.status);
       if(res.ok){
-        log('SYNC OK '+cnt+' - meme resultat 2 tel');
-        alert('SYNC OK '+cnt+' articles Poste '+(window.currentPoste||'1')+'\nAutre tel recoit dans 3s ?v=80');
+        var txt=await res.text();
+        log('✅ PUSH OK - '+cnt+' articles - meme resultat 2 tel!');
+        log('Serveur: Europe OK - '+cnt);
+        alert('✅ SYNC OK!\n'+cnt+' articles Poste '+(window.currentPoste||'1')+'\n\nAutre tel: ouvrez ?v=81\nApres 3s meme stock P1 dans cases!\n101-109 201-210 z5 z6 meme resultat!');
         return true;
+      }else{
+        log('❌ Push fail '+res.status);
       }
-    }catch(e){log('Err '+e.message);}
+    }catch(e){log('❌ Push err '+e.message);}
     return false;
   };
   window.oneClickSync=window.serverSync;
   window.manualSyncNow=window.serverSync;
-  
+
   async function fetchRestore(){
     try{
-      var res=await fetch(RTDB+'?t='+Date.now(),{cache:'no-store'});
-      if(!res.ok) return;
+      var url=RTDB+'?t='+Date.now()+'&r='+Math.random();
+      log('📥 Fetch serveur...');
+      var res=await fetch(url,{cache:'no-store'});
+      if(!res.ok){ log('Fetch status '+res.status); return; }
       var remote=await res.json();
-      if(!remote||!remote.st) return;
-      var poste=window.currentPoste||'1';
-      var localCnt=cntStock();
+      if(!remote||!remote.st){ log('Fetch vide'); return; }
       var remoteCnt=0;
       for(var k in remote.st){ if(remote.st[k]) remoteCnt++; }
-      if(remoteCnt>0 && JSON.stringify(remote.st)!==JSON.stringify((window.S||{}).st||{})){
-        log('Fetch '+remoteCnt+' - fusion P'+poste);
-        if(!window.S) window.S={st:{},m:{},z5:{},z6:{}};
-        if(!window.S.st) window.S.st={};
-        var merged=0;
+      var localCnt=cntStock();
+      log('📥 Fetch OK - Remote '+remoteCnt+' - Local '+localCnt);
+      
+      if(remoteCnt===0) return;
+      
+      // Check if different
+      var needMerge=false;
+      if(remoteCnt!==localCnt) needMerge=true;
+      else{
         for(var k2 in remote.st){
-          if(remote.st[k2] && remote.st[k2]!=='' && window.S.st[k2]!==remote.st[k2]){
-            window.S.st[k2]=remote.st[k2];
+          if((window.S.st||{})[k2]!==remote.st[k2]){ needMerge=true; break; }
+        }
+      }
+      
+      if(!needMerge){ log('✅ Deja synchro - meme resultat'); return; }
+      
+      log('🔄 Fusion '+remoteCnt+' articles - affichage dans cases stock P1');
+      
+      if(!window.S) window.S={st:{},m:{},z5:{},z6:{}};
+      if(!window.S.st) window.S.st={};
+      
+      var merged=0;
+      for(var k3 in remote.st){
+        var rv=remote.st[k3];
+        if(rv && rv!=='' ){
+          if(window.S.st[k3]!==rv){
+            window.S.st[k3]=rv;
             merged++;
           }
         }
-        if(remote.m) window.S.m=Object.assign({},window.S.m||{},remote.m);
-        if(remote.z5) window.S.z5=Object.assign({},window.S.z5||{},remote.z5);
-        if(remote.z6) window.S.z6=Object.assign({},window.S.z6||{},remote.z6);
-        if(merged>0){
-          window.S._updatedAt=Date.now();
-          localStorage.setItem('stp_machines_v1',JSON.stringify(window.S));
-          if(typeof view==='function'){ view(); log('view() - '+merged+' cases dans stock P'+poste); }
-          setTimeout(function(){
-            var inputs2=document.querySelectorAll('input.s[data-s]');
-            var r=0;
-            inputs2.forEach(function(inp){
-              var key=inp.dataset.s;
-              if(key && window.S.st[key] && document.activeElement!==inp){
-                inp.value=window.S.st[key];
-                r++;
-              }
-            });
-            if(r>0) log(r+' stock P'+poste+' affiches dans cases - meme resultat');
-          },600);
+      }
+      // Merge other stocks only (m,z5,z6) - ne touche pas base F,D
+      if(remote.m){
+        window.S.m=window.S.m||{};
+        for(var mk in remote.m){
+          if(!window.S.m[mk] || JSON.stringify(window.S.m[mk])!==JSON.stringify(remote.m[mk])){
+            window.S.m[mk]=remote.m[mk];
+          }
         }
       }
-    }catch(e){log('Fetch err '+e.message);}
+      if(remote.z5) window.S.z5=Object.assign({},window.S.z5||{},remote.z5);
+      if(remote.z6) window.S.z6=Object.assign({},window.S.z6||{},remote.z6);
+      
+      if(merged>0){
+        window.S._updatedAt=Date.now();
+        localStorage.setItem('stp_machines_v1',JSON.stringify(window.S));
+        log('💾 '+merged+' fusionnés - view() pour afficher dans cases');
+        
+        if(typeof view==='function'){
+          var oldTab=window.tab;
+          view();
+          log('📲 view() OK - '+merged+' stock P1 dans cases - 101-109 201-210 z5 z6');
+          
+          // Fill inputs after view
+          setTimeout(function(){
+            var inputs2=document.querySelectorAll('input.s[data-s]');
+            var filled=0;
+            inputs2.forEach(function(inp){
+              var key=inp.getAttribute('data-s');
+              if(key && window.S.st[key] && document.activeElement!==inp){
+                inp.value=window.S.st[key];
+                inp.style.background='#dcfce7';
+                filled++;
+                setTimeout(function(){ inp.style.background=''; },1500);
+              }
+            });
+            if(filled>0){
+              log('✅ '+filled+' cases stock P1 remplies - meme resultat 2 tel!');
+            }
+          },800);
+        }
+      }
+    }catch(e){log('❌ Fetch err '+e.message);}
   }
-  
+
+  // Start polling
   setTimeout(function(){
-    log('Polling 3s - 101-109 201-210 z5 z6 - meme resultat');
+    log('▶️ Loop 3s - 101-109 201-210 z5 z6 - meme resultat');
+    log('▶️ Black Box WORKING - Ne touche pas base');
     fetchRestore();
     setInterval(fetchRestore,3000);
   },2000);
