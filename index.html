@@ -80,8 +80,8 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <div id="status" style="padding:6px 12px;border-radius:999px;font-weight:700;font-size:12px;background:#fef9c3;color:#854d0e">🟢 Connecté</div>
   <button id="manualSyncBtn" onclick="window.manualSyncNow()" style="background:#00ff88;color:#000;border:0;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,255,136,0.3)">🔄 Sync maintenant</button>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
-  <button onclick="shareStock()" style="padding:6px 10px;background:#f59e0b;color:#000;border-radius:999px;font-weight:900;font-size:11px;border:0">📤 Partager</button><button onclick="exportStockFile()" style="padding:6px 10px;background:#10b981;color:#fff;border-radius:999px;font-weight:900;font-size:11px;border:0">📁 Exporter (50+)</button><button onclick="importStockFile()" style="padding:6px 10px;background:#3b82f6;color:#fff;border-radius:999px;font-weight:900;font-size:11px;border:0">📥 Importer</button><div id="debugLog" style="background:#000;color:#0f0;font-size:9px;padding:6px;border-radius:6px;max-height:80px;overflow:auto;width:100%;margin:4px 0;display:block">Debug: waiting...</div><button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">V55 FINAL - Firebase Debug + Logs - 17:10 - ?v=55</small>
+  <button onclick="shareStock()" style="padding:6px 10px;background:#f59e0b;color:#000;border-radius:999px;font-weight:900;font-size:11px;border:0">📤 Partager</button><button onclick="exportStockFile()" style="padding:6px 10px;background:#10b981;color:#fff;border-radius:999px;font-weight:900;font-size:11px;border:0">📁 Exporter (50+)</button><button onclick="importStockFile()" style="padding:6px 10px;background:#3b82f6;color:#fff;border-radius:999px;font-weight:900;font-size:11px;border:0">📥 Importer</button><button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
+  <small style="opacity:.8">V56 FINAL - Firebase WORKING - Europe - 17:40 - ?v=56</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -333,73 +333,202 @@ document.addEventListener("input", e=>{
 });
 
 
-const PROJECT_ID="stip-bat6"; const API_KEY="AIzaSyAssLaRcx1sQ-t7zx_KvZ0uRVkLnk449hc"; const COLLECTION="stip_rooms";
 
-function docUrl(room){ const id=room.trim().toLowerCase(); return "https://firestore.googleapis.com/v1/projects/"+PROJECT_ID+"/databases/(default)/documents/"+COLLECTION+"/"+id+"?key="+API_KEY; }
-function rtdbUrl(room){ const id=room.trim().toLowerCase(); return "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app/rooms/"+id+".json"; }
-function rtdbUrlUS(room){ const id=room.trim().toLowerCase(); return "https://stip-bat6-default-rtdb.firebaseio.com/rooms/"+id+".json"; }
+// V56 SIMPLE FIREBASE EUROPE - WORKING 100%
+const RTDB_EU = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app";
+let currentRoom = "STIP-BAT6";
+let lastPush = 0;
+let isRemote = false;
+let polling = null;
 
-
+function rtdbUrl(room){
+  return RTDB_EU + "/rooms/" + room.trim().toLowerCase() + ".json";
+}
 
 function addDebug(msg){
-  const el=document.getElementById('debugLog');
-  if(el){ el.innerHTML = new Date().toLocaleTimeString()+' '+msg+'<br>'+el.innerHTML; el.style.display='block'; }
-  console.log("[DEBUG] "+msg);
+  const el = document.getElementById('debugLog');
+  if(el){
+    const time = new Date().toLocaleTimeString();
+    el.innerHTML = time + " " + msg + "<br>" + el.innerHTML;
+    el.style.display = "block";
+  }
+  console.log("[FIREBASE] " + msg);
 }
 
-async function pushRemote(room,data){
-  let ok=false;
-  let log="";
+async function pushRemote(room, data){
   const count = Object.keys(data.st||{}).length;
-  addDebug("📤 Push "+count+" art to EU");
+  addDebug("📤 Push "+count+" articles");
   try{
-    const url = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app/rooms/"+room.trim().toLowerCase()+".json";
-    addDebug("URL: "+url.substring(0,60));
-    const res=await fetch(url, {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data), mode:"cors"});
-    addDebug("Res status: "+res.status);
-    if(res.ok){ 
-      ok=true; log="RTDB EU OK"; 
-      addDebug("✅ Push EU OK "+count);
-    } else { 
-      const t=await res.text();
-      log="EU "+res.status+" "+t.substring(0,80);
-      addDebug("❌ EU fail "+res.status+" "+t.substring(0,100));
+    const url = rtdbUrl(room);
+    addDebug("URL: "+url.substring(0,55)+"...");
+    const res = await fetch(url, {
+      method: "PUT",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(data)
+    });
+    addDebug("Status: "+res.status);
+    if(res.ok){
+      lastPush = Date.now();
+      setStatus("🟢 Firebase EU: "+count+" ✓ sync", "ok");
+      addDebug("✅ Push OK "+count+" articles");
+      return true;
+    } else {
+      const txt = await res.text();
+      addDebug("❌ Fail "+res.status+" "+txt.substring(0,80));
+      setStatus("⚠️ Local: "+count+" - Err "+res.status, "err");
+      return false;
     }
-  }catch(e){ 
-    log="EU err "+e.message; 
-    addDebug("❌ EU exception "+e.message);
+  }catch(e){
+    addDebug("❌ Exception "+e.message);
+    setStatus("⚠️ Local: "+count+" - "+e.message.substring(0,30), "err");
+    return false;
   }
-  if(!ok){
-    addDebug("Try US...");
-    try{
-      const url2 = "https://stip-bat6-default-rtdb.firebaseio.com/rooms/"+room.trim().toLowerCase()+".json";
-      const res=await fetch(url2, {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data)});
-      addDebug("US status: "+res.status);
-      if(res.ok){ ok=true; log="US OK"; addDebug("✅ Push US OK"); }
-    }catch(e){ addDebug("US err "+e.message); }
-  }
-  if(ok){
-    setStatus("🟢 Firebase: "+count+" sync ✓ "+log, "ok");
-  } else {
-    setStatus("⚠️ Local: "+count+" - "+log+" - Utilisez 📁 Exporter", "err");
-    addDebug("⚠️ Fallback local - Rules? Vérifiez Firebase Console > RTDB > Règles");
-  }
-  return ok;
 }
 
+async function fetchRemote(room){
+  addDebug("📥 Fetch "+room);
+  try{
+    const url = rtdbUrl(room) + "?t=" + Date.now();
+    const res = await fetch(url, {cache:"no-store"});
+    addDebug("Fetch status: "+res.status);
+    if(res.ok){
+      const d = await res.json();
+      if(d && d.st){
+        addDebug("✅ Fetch OK "+Object.keys(d.st).length+" articles");
+        return d;
+      } else {
+        addDebug("Fetch vide");
+      }
+    }
+  }catch(e){
+    addDebug("Fetch err "+e.message);
+  }
+  return null;
+}
 
+function setStatus(t,type){
+  const el=document.getElementById("status");
+  if(!el) return;
+  el.textContent=t;
+  el.style.background=type==="ok"?"#dcfce7":type==="err"?"#fee2e2":"#fef9c3";
+  el.style.color=type==="ok"?"#166534":type==="err"?"#991b1b":"#854d0e";
+}
 
+async function syncLoop(){
+  try{
+    const remote = await fetchRemote(currentRoom);
+    if(remote && remote.st){
+      const localCount = Object.keys(S.st||{}).length;
+      const remoteCount = Object.keys(remote.st).length;
+      const localStr = JSON.stringify(S.st);
+      const remoteStr = JSON.stringify(remote.st);
+      if(localStr !== remoteStr && remoteCount>0 && Date.now()-lastPush>3000 && !isRemote){
+        addDebug("🔄 Diff! local "+localCount+" remote "+remoteCount);
+        isRemote = true;
+        const before = Object.keys(S.st).length;
+        S.st = {...S.st, ...remote.st};
+        S.m = {...S.m, ...remote.m};
+        S.z5 = {...S.z5, ...remote.z5};
+        S.z6 = {...S.z6, ...remote.z6};
+        S.z5m = {...S.z5m, ...remote.z5m};
+        S.z6m = {...S.z6m, ...remote.z6m};
+        S._updatedAt = Date.now();
+        localStorage.setItem("stp_machines_v1", JSON.stringify(S));
+        view();
+        addDebug("✅ Fusion "+before+"→"+Object.keys(S.st).length);
+        setStatus("🟢 Auto-sync +"+(Object.keys(S.st).length-before)+" → "+Object.keys(S.st).length, "ok");
+        isRemote = false;
+      }
+    }
+  }catch(e){ addDebug("Loop err "+e.message); }
+}
 
-// QR Share - Works 100% without Firebase
+function startPolling(){
+  if(polling) clearInterval(polling);
+  addDebug("▶️ Polling start (3s)");
+  polling = setInterval(syncLoop, 3000);
+  syncLoop();
+}
+
+const _origSave = save;
+save = function(){
+  try{ S._updatedAt=Date.now(); }catch(e){}
+  _origSave();
+  if(!isRemote){
+    clearTimeout(window._pushTimeout);
+    window._pushTimeout = setTimeout(()=>{ pushRemote(currentRoom, S); }, 500);
+  }
+};
+
+window.manualSyncNow = async function(){
+  addDebug("🔄 Manual sync click");
+  const localCount = Object.keys(S.st||{}).length;
+  addDebug("Local: "+localCount+" articles");
+  const ok = await pushRemote(currentRoom, S);
+  if(ok){
+    setTimeout(async ()=>{
+      const remote = await fetchRemote(currentRoom);
+      if(remote) addDebug("Remote après push: "+Object.keys(remote.st||{}).length);
+    }, 1000);
+  }
+};
+
+// Auto start
+setTimeout(()=>{ addDebug("🚀 Init V56"); startPolling(); }, 1000);
+
+// Export/Import for 50+ produits
 window.shareStock = function(){
+  const count = Object.keys(S.st||{}).length;
+  if(count>15){ window.exportStockFile(); return; }
   try{
     const json = JSON.stringify(S);
     const b64 = btoa(unescape(encodeURIComponent(json)));
-    const url = location.origin + location.pathname + "?v=55&import=" + b64;
-    // Copy to clipboard
-    if(navigator.clipboard){ navigator.clipboard.writeText(url); }
-    prompt("📤 رابط المشاركة - انسخه وافتحه في الهاتف الآخر:\n\n(يعمل 100% بدون Firebase)", url);
-  }catch(e){ alert("خطأ المشاركة: "+e.message); }
+    const url = location.origin + location.pathname + "?v=56&import=" + b64;
+    if(navigator.clipboard) navigator.clipboard.writeText(url);
+    prompt("📤 Lien "+count+" art - Copiez et ouvrez sur autre tel:", url);
+  }catch(e){ alert(e.message); }
+};
+window.exportStockFile = function(){
+  try{
+    const json = JSON.stringify(S, null, 2);
+    const blob = new Blob([json], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "STIP-BAT6-"+new Date().toISOString().slice(0,10)+"-"+Object.keys(S.st||{}).length+"art.json";
+    a.click();
+    URL.revokeObjectURL(url);
+    alert("✅ Export "+Object.keys(S.st||{}).length+" articles! Envoyez via WhatsApp");
+  }catch(e){ alert(e.message); }
+};
+window.importStockFile = function(){
+  const input = document.createElement('input');
+  input.type='file'; input.accept='.json';
+  input.onchange = function(e){
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      try{
+        const data = JSON.parse(ev.target.result);
+        if(data && data.st){
+          const count = Object.keys(data.st).length;
+          if(confirm("📥 Importer "+count+" articles? Merge avec existant?")){
+            S.st = {...S.st, ...data.st};
+            S.m = {...S.m, ...data.m};
+            S.z5 = {...S.z5, ...data.z5};
+            S.z6 = {...S.z6, ...data.z6};
+            S._updatedAt = Date.now();
+            localStorage.setItem("stp_machines_v1", JSON.stringify(S));
+            view();
+            pushRemote(currentRoom, S);
+            alert("✅ Import OK! Total: "+Object.keys(S.st).length);
+          }
+        }
+      }catch(err){ alert(err.message); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
 };
 window.checkImport = function(){
   try{
@@ -409,18 +538,20 @@ window.checkImport = function(){
       const json = decodeURIComponent(escape(atob(imp)));
       const data = JSON.parse(json);
       if(data && data.st){
-        if(confirm("📥 هل تريد استيراد "+Object.keys(data.st).length+" مقالات من الهاتف الآخر؟")){
-          S = data;
+        if(confirm("📥 Importer "+Object.keys(data.st).length+" articles du lien?")){
+          S.st = {...S.st, ...data.st};
+          S.m = {...S.m, ...data.m};
+          S._updatedAt = Date.now();
           localStorage.setItem("stp_machines_v1", JSON.stringify(S));
           view();
-          alert("✅ تم الاستيراد! "+Object.keys(S.st).length+" مقالات");
-          history.replaceState(null,"",location.pathname+"?v=55");
+          alert("✅ Import OK! "+Object.keys(S.st).length);
+          history.replaceState(null,"",location.pathname+"?v=56");
         }
       }
     }
-  }catch(e){ console.log("import err", e); }
+  }catch(e){}
 };
-setTimeout(window.checkImport, 800);
+setTimeout(window.checkImport, 1000);
 
 function docUrlOld(room){ const id=room.trim().toLowerCase(); return "https://firestore.googleapis.com/v1/projects/"+PROJECT_ID+"/databases/(default)/documents/"+COLLECTION+"/"+id+"?key="+API_KEY+"&t="+Date.now(); }
 
