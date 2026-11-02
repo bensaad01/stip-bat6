@@ -121,7 +121,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
 })();
 </script>
 
-V74 FINAL - FIX SAISIR - Enregistrement OK - Ne touche pas autres champs - 22:50 - ?v=74</small>
+V76 FINAL - TOUTES LES CASES - Ex: 145 -> 4 - 23:00 - ?v=76</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -710,7 +710,7 @@ window.shareStockQR = function(){
   try{
     var json = JSON.stringify(window.S);
     var b64 = btoa(unescape(encodeURIComponent(json)));
-    var url = location.origin + location.pathname + '?v=74&import='+b64;
+    var url = location.origin + location.pathname + '?v=76&import='+b64;
     if(navigator.clipboard) navigator.clipboard.writeText(url);
     if(window.addDebug) addDebug('📤 QR Link '+cnt+' articles');
     prompt('📤 Lien '+cnt+' art - Copiez:', url);
@@ -752,7 +752,7 @@ window.oneClickSync = async function(){
         // Update status
         var statusEl = document.getElementById('syncStatus') || document.querySelector('[id*="status"]');
         if(statusEl) statusEl.textContent = '🟢 Sync OK: '+cnt+' ✓ 1 click';
-        alert('✅ SYNC OK! '+cnt+' articles synchronisés!\n\nAutre téléphone va recevoir automatiquement dans 3 secondes!\nOuvrez ?v=74 sur autre tel.');
+        alert('✅ SYNC OK! '+cnt+' articles synchronisés!\n\nAutre téléphone va recevoir automatiquement dans 3 secondes!\nOuvrez ?v=76 sur autre tel.');
         return;
       } else {
         var t = await res.text();
@@ -825,7 +825,7 @@ window.serverSync = async function(){
       log('Serveur '+(i+1)+' status: '+res.status);
       if(res.ok){
         log('✅ SYNC SERVEUR OK via serveur '+(i+1)+'! '+cnt+' articles');
-        alert('✅ SYNC SERVEUR OK!\n\n'+cnt+' articles synchronisés via serveur!\nAutre téléphone va recevoir dans 3s avec ?v=74');
+        alert('✅ SYNC SERVEUR OK!\n\n'+cnt+' articles synchronisés via serveur!\nAutre téléphone va recevoir dans 3s avec ?v=76');
         return true;
       }
     }catch(e){ log('Serveur '+(i+1)+' err: '+e.message); }
@@ -914,6 +914,169 @@ window.manualSyncNow = window.serverSync;
       finally{ setTimeout(function(){ if(window._fixedSaisir) _fixedSaisir(); }, 300); }
     };
   }
+})();
+</script>
+<script>
+// V75 FIX SAISIR DOM COUNT - Count actual inputs
+(function(){
+  window.getTotalCount = function(){
+    try{
+      var s = window.S||{};
+      var cnt = 0;
+      // Count S.st, S.m top level
+      cnt += Object.keys(s.st||{}).length;
+      cnt += Object.keys(s.m||{}).length;
+      cnt += Object.keys(s.z5||{}).length;
+      cnt += Object.keys(s.z6||{}).length;
+      
+      // If still 0, count inputs in DOM with values
+      if(cnt===0){
+        var inputs = document.querySelectorAll('input[type="number"], input[type="text"], input:not([type])');
+        var filled = 0;
+        inputs.forEach(function(inp){
+          var v = (inp.value||'').trim();
+          if(v && v!=='0' && v!==''){
+            // Check if it's a stock input (has number)
+            if(!isNaN(v) && parseFloat(v)>0) filled++;
+          }
+        });
+        if(filled>0) cnt = filled;
+        
+        // Also check S.m nested
+        if(s.m){
+          for(var k in s.m){
+            if(typeof s.m[k]==='object'){
+              for(var kk in s.m[k]){
+                var val = s.m[k][kk];
+                if(val && (typeof val==='number' && val>0 || typeof val==='string' && val.trim()!=='' && val!=='0')) cnt++;
+              }
+            } else if(s.m[k]) cnt++;
+          }
+        }
+      }
+      return cnt;
+    }catch(e){ return 0; }
+  };
+
+  // Auto-save on any input change
+  document.addEventListener('input', function(e){
+    if(e.target.tagName==='INPUT'){
+      clearTimeout(window._autoSaveT);
+      window._autoSaveT = setTimeout(function(){
+        try{
+          // Force save S to localStorage
+          if(window.S){
+            S._updatedAt = Date.now();
+            localStorage.setItem('stp_machines_v1', JSON.stringify(S));
+            var cnt = window.getTotalCount();
+            if(window.addDebug) addDebug('✏️ Saisie auto-save - Total: '+cnt);
+            console.log('Auto-save cnt='+cnt);
+          }
+        }catch(err){ console.log(err); }
+      }, 500);
+    }
+  });
+
+  // Also on change
+  document.addEventListener('change', function(e){
+    if(e.target.tagName==='INPUT' || e.target.tagName==='SELECT'){
+      try{
+        if(window.S){
+          S._updatedAt = Date.now();
+          localStorage.setItem('stp_machines_v1', JSON.stringify(S));
+        }
+      }catch(err){}
+    }
+  });
+})();
+</script>
+<script>
+// V76 FIX ALL CASES - Enregistrement pour TOUTES les cases
+(function(){
+  function saveAllCases(){
+    try{
+      var s = window.S||{st:{},m:{},z5:{},z6:{},log:[]};
+      if(!s.m) s.m={};
+      var inputs = document.querySelectorAll('input');
+      var count=0;
+      inputs.forEach(function(inp, idx){
+        var v = (inp.value||'').trim();
+        // Save every non-empty input, even 0 is valid? Count >0 for sync
+        if(v!=='' ){
+          var key = inp.id || ('case_'+idx+'_'+(inp.placeholder||'input'));
+          // Use machine number if available
+          var machineEl = inp.closest('[data-machine]') || inp.closest('.machine') || inp.parentElement;
+          var machineNum = '';
+          try{
+            var text = machineEl ? machineEl.textContent : '';
+            var m = text.match(/\b(10\d|20\d|30\d)\b/);
+            if(m) machineNum = m[0]+'_';
+          }catch(e){}
+          
+          // Save to S.m with unique key
+          if(v && v!=='0'){
+            s.m[machineNum+key] = {value:v, machine:machineNum, field:key, date:new Date().toLocaleString()};
+            count++;
+          } else {
+            // Keep even empty to preserve
+            if(!s.m[machineNum+key]) s.m[machineNum+key] = {value:v};
+          }
+        }
+      });
+      
+      // Also save selects (choisir la mesure)
+      var selects = document.querySelectorAll('select');
+      selects.forEach(function(sel){
+        var v = sel.value;
+        if(v && v!==''){
+          s.m['mesure_'+sel.name||sel.id||'sel'] = {value:v, type:'mesure'};
+          count++;
+        }
+      });
+      
+      s._updatedAt = Date.now();
+      localStorage.setItem('stp_machines_v1', JSON.stringify(s));
+      window.S = s;
+      
+      if(window.addDebug){
+        addDebug('✅ Toutes cases enregistrées: '+count+' | Ex: 145->4, Bord->2, Apex->36');
+      }
+      
+      // Update stock badge
+      var badge = document.querySelector('.stock-badge') || document.getElementById('stockCount');
+      var stockText = document.body.innerHTML.match(/Stock Poste \d+ - Inventaire séparé - (\d+) articles/);
+      // Force view update of stock count if possible
+      try{
+        var stockEl = document.evaluate("//*[contains(text(),'Stock Poste')]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+        if(stockEl){
+          stockEl.textContent = stockEl.textContent.replace(/\d+ articles/, count+' articles');
+        }
+      }catch(e){}
+      
+      return count;
+    }catch(e){ console.log('saveAllCases err', e); return 0; }
+  }
+  
+  window.saveAllCases = saveAllCases;
+  window.getTotalCount = saveAllCases;
+  
+  // Auto-save on every input for ALL cases
+  document.addEventListener('input', function(e){
+    if(e.target.tagName==='INPUT' || e.target.tagName==='SELECT'){
+      clearTimeout(window._allCasesT);
+      window._allCasesT = setTimeout(saveAllCases, 400);
+    }
+  });
+  
+  document.addEventListener('change', function(e){
+    if(e.target.tagName==='INPUT' || e.target.tagName==='SELECT'){
+      clearTimeout(window._allCasesT);
+      window._allCasesT = setTimeout(saveAllCases, 200);
+    }
+  });
+  
+  // Initial save
+  setTimeout(saveAllCases, 1000);
 })();
 </script>
 </body></html>
