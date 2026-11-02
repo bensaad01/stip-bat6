@@ -81,7 +81,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <button id="manualSyncBtn" onclick="window.manualSyncNow()" style="background:#00ff88;color:#000;border:0;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,255,136,0.3)">🔄 Sync maintenant</button>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
   <button onclick="shareStock()" style="padding:6px 10px;background:#f59e0b;color:#000;border-radius:999px;font-weight:900;font-size:12px;border:0">📤 Partager Stock (QR)</button><button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">V49 FINAL - QR Share + RTDB + Firestore - 12:15</small>
+  <small style="opacity:.8">V50 FINAL - QR SYNC 100% - 12:20 - ?v=50</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -370,7 +370,7 @@ window.shareStock = function(){
   try{
     const json = JSON.stringify(S);
     const b64 = btoa(unescape(encodeURIComponent(json)));
-    const url = location.origin + location.pathname + "?v=49&import=" + b64;
+    const url = location.origin + location.pathname + "?v=50&import=" + b64;
     // Copy to clipboard
     if(navigator.clipboard){ navigator.clipboard.writeText(url); }
     prompt("📤 رابط المشاركة - انسخه وافتحه في الهاتف الآخر:\n\n(يعمل 100% بدون Firebase)", url);
@@ -389,7 +389,7 @@ window.checkImport = function(){
           localStorage.setItem("stp_machines_v1", JSON.stringify(S));
           view();
           alert("✅ تم الاستيراد! "+Object.keys(S.st).length+" مقالات");
-          history.replaceState(null,"",location.pathname+"?v=49");
+          history.replaceState(null,"",location.pathname+"?v=50");
         }
       }
     }
