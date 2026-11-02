@@ -82,7 +82,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <button id="manualSyncBtn" onclick="window.manualSyncNow()" style="background:#00ff88;color:#000;border:0;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,255,136,0.3)">🔄 Sync maintenant</button>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
   <button onclick="shareStock()" style="padding:6px 10px;background:#f59e0b;color:#000;border-radius:999px;font-weight:900;font-size:11px;border:0">📤 Partager</button><button onclick="exportStockFile()" style="padding:6px 10px;background:#10b981;color:#fff;border-radius:999px;font-weight:900;font-size:11px;border:0">📁 Exporter (50+)</button><button onclick="importStockFile()" style="padding:6px 10px;background:#3b82f6;color:#fff;border-radius:999px;font-weight:900;font-size:11px;border:0">📥 Importer</button><button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">V59 FINAL - Firebase WORKING - Europe - 18:30 - ?v=59</small>
+  <small style="opacity:.8">V60 FINAL - View Fixed - Firebase - 18:45 - ?v=60</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -484,7 +484,7 @@ window.shareStock = function(){
   try{
     const json = JSON.stringify(S);
     const b64 = btoa(unescape(encodeURIComponent(json)));
-    const url = location.origin + location.pathname + "?v=59&import=" + b64;
+    const url = location.origin + location.pathname + "?v=60&import=" + b64;
     if(navigator.clipboard) navigator.clipboard.writeText(url);
     prompt("📤 Lien "+count+" art - Copiez et ouvrez sur autre tel:", url);
   }catch(e){ alert(e.message); }
@@ -546,7 +546,7 @@ window.checkImport = function(){
           localStorage.setItem("stp_machines_v1", JSON.stringify(S));
           view();
           alert("✅ Import OK! "+Object.keys(S.st).length);
-          history.replaceState(null,"",location.pathname+"?v=59");
+          history.replaceState(null,"",location.pathname+"?v=60");
         }
       }
     }
@@ -703,6 +703,35 @@ async function fbSyncLoop(){
   }catch(e){ fbLog("Loop err "+e.message); }
 }
 
+
+// V60 FIX VIEW - Ensure content shows
+function ensureView(){
+  try{
+    if(typeof tab === 'undefined') window.tab = "s";
+    if(typeof currentPoste === 'undefined') window.currentPoste = "1";
+    if(typeof S === 'undefined' || !S) S = {st:{},m:{},z5:{},z6:{},z5m:{},z6m:{},log:[],_updatedAt:Date.now()};
+    if(typeof view === 'function') view();
+  }catch(e){ console.log("ensureView err", e); }
+}
+setTimeout(ensureView, 500);
+setTimeout(ensureView, 1500);
+
+// V60 Ensure tab buttons work even if nav selector fails
+document.addEventListener('click', function(e){
+  const btn = e.target.closest('[data-t], .posteBtn');
+  if(!btn) return;
+  if(btn.dataset.t){
+    window.tab = btn.dataset.t;
+    if(typeof view === 'function') view();
+    document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on', b.dataset.t===window.tab));
+  }
+  if(btn.dataset.poste){
+    window.currentPoste = btn.dataset.poste;
+    if(typeof view === 'function') view();
+  }
+});
+
+
 function fbStart(){
   if(fbPolling) clearInterval(fbPolling);
   fbLog("▶️ Polling 3s start");
@@ -758,7 +787,7 @@ window.emergencyReset = function(){
       localStorage.clear();
       sessionStorage.clear();
       alert("✅ Reset OK! Rechargement...");
-      location.href = location.origin + location.pathname + "?v=59&reset=ok";
+      location.href = location.origin + location.pathname + "?v=60&reset=ok";
     }catch(e){ alert(e.message); location.reload(); }
   }
 };
