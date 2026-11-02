@@ -82,7 +82,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
   <button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
   <small style="opacity:.8"><div id="debugLog" style="background:#000;color:#0f0;padding:8px;border-radius:8px;font-family:monospace;font-size:11px;max-height:120px;overflow-y:auto;margin:8px 0;white-space:pre-wrap;display:block">Debug: waiting...</div>
-V67 FINAL - OLD UI + 1ere + 2eme Phase + Black Box WORKING - 20:15 - ?v=67</small>
+V68 FINAL - OLD UI + 1ere + 2eme Phase + Black Box WORKING - 20:20 - ?v=68</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -607,99 +607,99 @@ setTimeout(()=>clearInterval(authCheckInterval), 8000);
 </script>
 
 <script>
+
 <script>
-// V67 FIX BLACK BOX - Debug working
+// V68 BLACK BOX WORKING - Fixed placement
+window.addDebug = function(msg){
+  try{
+    var el = document.getElementById('debugLog');
+    if(!el){ return; }
+    var time = new Date().toLocaleTimeString();
+    el.innerHTML = time + ' ' + msg + '<br>' + el.innerHTML;
+    el.style.display = 'block';
+  }catch(e){}
+};
+
 (function(){
-  function addDebug(msg){
-    try{
-      const el = document.getElementById('debugLog');
-      if(!el) return;
-      const time = new Date().toLocaleTimeString();
-      el.innerHTML = time + ' ' + msg + '<br>' + el.innerHTML;
-      el.style.display = 'block';
-      console.log('[FB] '+msg);
-    }catch(e){ console.log('debug err', e); }
-  }
-  window.addDebug = addDebug;
+  var RTDB = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app";
   
-  // Show immediately
-  setTimeout(()=>{ addDebug('🚀 V67 Init - OLD UI + Black Box'); }, 500);
-  setTimeout(()=>{ addDebug('▶️ Polling 3s Europe - Poste '+(window.currentPoste||'1')); }, 1000);
+  function log(m){ if(window.addDebug) addDebug(m); console.log(m); }
   
-  const RTDB_EU = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app";
+  log('🚀 V68 Init - OLD UI + Black Box WORKING');
   
   window.fbPushEU = async function(room, data){
     try{
-      const c = Object.keys(data.st||data.m||{}).length;
-      addDebug('📤 Push '+c+' articles -> '+room);
-      const url = RTDB_EU + '/rooms/' + (room||'STIP-BAT6').toLowerCase() + '.json';
-      const res = await fetch(url, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
-      addDebug('Status: '+res.status);
-      if(res.ok){ addDebug('✅ Push OK '+c); }
-      else { const t=await res.text(); addDebug('❌ Fail '+res.status); }
-      return res.ok;
-    }catch(e){ addDebug('❌ Push err '+e.message); return false; }
+      var c = Object.keys((data&& (data.m||data.st))||{}).length;
+      log('📤 Push '+c+' -> '+(room||'STIP-BAT6'));
+      var url = RTDB + '/rooms/' + (room||'STIP-BAT6').toLowerCase() + '.json';
+      var res = await fetch(url, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+      log('Status: '+res.status);
+      if(res.ok){ log('✅ Push OK '+c); return true; }
+      else { log('❌ Fail '+res.status); return false; }
+    }catch(e){ log('❌ Push err '+e.message); return false; }
   };
   
   window.fbFetchEU = async function(room){
     try{
-      addDebug('📥 Fetch '+(room||'STIP-BAT6'));
-      const url = RTDB_EU + '/rooms/' + (room||'STIP-BAT6').toLowerCase() + '.json?t='+Date.now();
-      const res = await fetch(url, {cache:'no-store'});
-      addDebug('Fetch status: '+res.status);
+      log('📥 Fetch '+(room||'STIP-BAT6'));
+      var url = RTDB + '/rooms/' + (room||'STIP-BAT6').toLowerCase() + '.json?t='+Date.now();
+      var res = await fetch(url, {cache:'no-store'});
+      log('Fetch status: '+res.status);
       if(res.ok){
-        const d=await res.json();
-        if(d && Object.keys(d).length>0){
-          const cnt=Object.keys(d.st||d.m||{}).length;
-          if(cnt>0) addDebug('✅ Fetch OK '+cnt+' articles');
-          else addDebug('Vide (0 articles)');
+        var d = await res.json();
+        if(d){
+          var cnt = Object.keys(d.st||d.m||{}).length;
+          if(cnt>0) log('✅ Fetch OK '+cnt);
+          else log('Vide (0)');
           return d;
-        } else addDebug('Vide');
+        } else log('Vide');
       }
       return null;
-    }catch(e){ addDebug('Fetch err '+e.message); return null; }
+    }catch(e){ log('Fetch err '+e.message); return null; }
   };
   
   window.manualSyncNow = async function(){
-    addDebug('🔄 Sync maintenant click');
-    const s = window.S||{};
-    const cnt = Object.keys(s.st||s.m||{}).length;
-    addDebug('Local: '+cnt+' articles');
+    log('🔄 Sync maintenant click');
+    var s = window.S||{st:{},m:{}};
+    var cnt = Object.keys(s.st||s.m||{}).length;
+    log('Local: '+cnt);
     await window.fbPushEU('STIP-BAT6', s);
-    setTimeout(async()=>{
-      const r=await window.fbFetchEU('STIP-BAT6');
-      if(r) addDebug('Remote: '+Object.keys(r.st||r.m||{}).length);
-    }, 1000);
   };
   
+  var lastPush=0;
+  async function loop(){
+    try{
+      var remote = await window.fbFetchEU('STIP-BAT6');
+      if(remote && (remote.st||remote.m)){
+        var local = window.S||{};
+        var lc = Object.keys(local.st||local.m||{}).length;
+        var rc = Object.keys(remote.st||remote.m||{}).length;
+        if(rc>0 && rc!==lc && Date.now()-lastPush>3000){
+          log('🔄 Diff local '+lc+' remote '+rc);
+          window.S = {...local, st:{...local.st,...remote.st}, m:{...local.m,...remote.m}};
+          try{ localStorage.setItem('stp_machines_v1', JSON.stringify(window.S)); }catch(e){}
+          if(typeof view==='function') try{ view(); }catch(e){}
+          log('✅ Fusion total '+(Object.keys(window.S.st||{}).length));
+        }
+      }
+    }catch(e){ log('Loop err '+e.message); }
+  }
+  
+  setTimeout(function(){
+    log('▶️ Polling 3s Europe start');
+    setInterval(loop, 3000);
+    loop();
+  }, 1500);
+  
   // Override save
-  const _save = window.save;
+  var _save = window.save;
   window.save = function(){
     try{ if(window.S) S._updatedAt=Date.now(); }catch(e){}
     try{ if(_save) _save(); }catch(e){}
-    clearTimeout(window._pushT);
-    window._pushT=setTimeout(()=>{ fbPushEU('STIP-BAT6', S); }, 1000);
+    clearTimeout(window._pt);
+    window._pt=setTimeout(function(){ window.fbPushEU('STIP-BAT6', window.S); }, 1000);
   };
-  
-  // Polling
-  async function loop(){
-    try{
-      const remote=await fbFetchEU('STIP-BAT6');
-      if(remote && (remote.st||remote.m)){
-        const local = window.S||{};
-        const lc=Object.keys(local.st||local.m||{}).length;
-        const rc=Object.keys(remote.st||remote.m||{}).length;
-        if(rc>0 && rc!==lc){
-          addDebug('🔄 Diff local '+lc+' remote '+rc+' -> Fusion');
-          window.S={...local, ...remote, st:{...local.st,...remote.st}, m:{...local.m,...remote.m}};
-          localStorage.setItem('stp_machines_v1', JSON.stringify(window.S));
-          if(typeof view==='function') view();
-          addDebug('✅ Fusion OK total '+(Object.keys(window.S.st||window.S.m||{}).length));
-        }
-      }
-    }catch(e){ addDebug('Loop err '+e.message); }
-  }
-  
-  setTimeout(()=>{ addDebug('▶️ Polling start 3s'); setInterval(loop, 3000); loop(); }, 2000);
 })();
-</script></body></html>
+</script>
+
+</body></html>
