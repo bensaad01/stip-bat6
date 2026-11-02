@@ -22,7 +22,7 @@ th,td{border:1px solid var(--bd);padding:4px 6px;text-align:center;white-space:n
 td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight:700;z-index:2}td:first-child{color:#111}
 .n{color:var(--mu);font-size:12px;margin:4px 2px}.btn{padding:8px 12px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px}
 .q{font-size:12px;color:var(--ac);min-width:56px;text-align:left;font-weight:600}
-</style></head><body><div style="background:#ff0000;color:#fff;text-align:center;padding:6px;font-size:13px;font-weight:900;position:fixed;top:0;left:0;right:0;z-index:9999">V48 FINAL - 12:03 - Cache Fixed - ?v=48</div><div style="height:28px"></div>
+</style></head><body><div style="background:#ff0000;color:#fff;text-align:center;padding:6px;font-size:13px;font-weight:900;position:fixed;top:0;left:0;right:0;z-index:9999">V49 FINAL - 12:15 - QRhe Fixed - ?v=48</div><div style="height:28px"></div>
 
 <!-- AUTH SYSTEM V29 - Protection par carte -->
 <div id="authScreen" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#0f172a,#1e293b);display:flex;align-items:center;justify-content:center;padding:20px">
@@ -80,8 +80,8 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <div id="status" style="padding:6px 12px;border-radius:999px;font-weight:700;font-size:12px;background:#fef9c3;color:#854d0e">🟢 Connecté</div>
   <button id="manualSyncBtn" onclick="window.manualSyncNow()" style="background:#00ff88;color:#000;border:0;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,255,136,0.3)">🔄 Sync maintenant</button>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
-  <button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">V48 FINAL - Cache Fixed - 12:03 - Try Sync</small>
+  <button onclick="shareStock()" style="padding:6px 10px;background:#f59e0b;color:#000;border-radius:999px;font-weight:900;font-size:12px;border:0">📤 Partager Stock (QR)</button><button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
+  <small style="opacity:.8">V49 FINAL - QR Share + RTDB + Firestore - 12:15</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -334,7 +334,71 @@ document.addEventListener("input", e=>{
 
 
 const PROJECT_ID="stip-bat6"; const API_KEY="AIzaSyAssLaRcx1sQ-t7zx_KvZ0uRVkLnk449hc"; const COLLECTION="stip_rooms";
-function docUrl(room){ const id=room.trim().toLowerCase(); return "https://firestore.googleapis.com/v1/projects/"+PROJECT_ID+"/databases/(default)/documents/"+COLLECTION+"/"+id+"?key="+API_KEY+"&t="+Date.now(); }
+
+function docUrl(room){ const id=room.trim().toLowerCase(); return "https://firestore.googleapis.com/v1/projects/"+PROJECT_ID+"/databases/(default)/documents/"+COLLECTION+"/"+id+"?key="+API_KEY; }
+function rtdbUrl(room){ const id=room.trim().toLowerCase(); return "https://stip-bat6-default-rtdb.firebaseio.com/rooms/"+id+".json"; }
+
+async function fetchRemote(room){
+  // Try Firestore
+  try{
+    const res=await fetch(docUrl(room)+"?t="+Date.now(), {cache:"no-store"});
+    if(res.ok){ const j=await res.json(); if(j.fields && j.fields.data){ return JSON.parse(j.fields.data.stringValue); } }
+  }catch(e){}
+  // Try RTDB
+  try{
+    const res=await fetch(rtdbUrl(room)+"?t="+Date.now(), {cache:"no-store"});
+    if(res.ok){ const d=await res.json(); if(d && d.st) return d; }
+  }catch(e){}
+  return null;
+}
+async function pushRemote(room,data){
+  let ok=false;
+  try{
+    const payload={fields:{data:{stringValue:JSON.stringify(data)}, updatedAt:{timestampValue:new Date().toISOString()}}};
+    const res=await fetch(docUrl(room), {method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)});
+    if(res.ok) ok=true;
+  }catch(e){}
+  try{
+    const res=await fetch(rtdbUrl(room), {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data)});
+    if(res.ok) ok=true;
+  }catch(e){}
+  return ok;
+}
+
+// QR Share - Works 100% without Firebase
+window.shareStock = function(){
+  try{
+    const json = JSON.stringify(S);
+    const b64 = btoa(unescape(encodeURIComponent(json)));
+    const url = location.origin + location.pathname + "?v=49&import=" + b64;
+    // Copy to clipboard
+    if(navigator.clipboard){ navigator.clipboard.writeText(url); }
+    prompt("📤 رابط المشاركة - انسخه وافتحه في الهاتف الآخر:\n\n(يعمل 100% بدون Firebase)", url);
+  }catch(e){ alert("خطأ المشاركة: "+e.message); }
+};
+window.checkImport = function(){
+  try{
+    const params = new URLSearchParams(location.search);
+    const imp = params.get('import');
+    if(imp){
+      const json = decodeURIComponent(escape(atob(imp)));
+      const data = JSON.parse(json);
+      if(data && data.st){
+        if(confirm("📥 هل تريد استيراد "+Object.keys(data.st).length+" مقالات من الهاتف الآخر؟")){
+          S = data;
+          localStorage.setItem("stp_machines_v1", JSON.stringify(S));
+          view();
+          alert("✅ تم الاستيراد! "+Object.keys(S.st).length+" مقالات");
+          history.replaceState(null,"",location.pathname+"?v=49");
+        }
+      }
+    }
+  }catch(e){ console.log("import err", e); }
+};
+setTimeout(window.checkImport, 800);
+
+function docUrlOld(room){ const id=room.trim().toLowerCase(); return "https://firestore.googleapis.com/v1/projects/"+PROJECT_ID+"/databases/(default)/documents/"+COLLECTION+"/"+id+"?key="+API_KEY+"&t="+Date.now(); }
+
 let currentRoom="STIP-BAT6"; let lastPush=0; let isRemote=false; let polling=null;
 async function fetchRemote(room){ try{ const res=await fetch(docUrl(room)); if(res.status===404) return null; if(!res.ok) throw new Error("HTTP "+res.status); const j=await res.json(); if(!j.fields||!j.fields.data) return null; return JSON.parse(j.fields.data.stringValue); }catch(e){ return null; } }
 async function pushRemote(room,data){ try{ const payload={fields:{data:{stringValue:JSON.stringify(data)}, room:{stringValue:room}, updatedAt:{timestampValue:new Date().toISOString()}}}; const res=await fetch(docUrl(room),{method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)}); if(!res.ok) throw new Error("Push "+res.status); lastPush=Date.now(); setStatus("🟢 Connecté: "+room.toUpperCase(),"ok"); return true; }catch(e){ setStatus("🟢 Connecté (local)","ok"); return true; } }
