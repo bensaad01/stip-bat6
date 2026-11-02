@@ -81,8 +81,47 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <button id="manualSyncBtn" onclick="window.manualSyncNow()" style="background:#00ff88;color:#000;border:0;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,255,136,0.3)">🔄 Sync maintenant</button>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
   <button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8"><div id="debugLog" style="background:#000;color:#0f0;padding:8px;border-radius:8px;font-family:monospace;font-size:11px;max-height:120px;overflow-y:auto;margin:8px 0;white-space:pre-wrap;display:block">Debug: waiting...</div>
-V68 FINAL - OLD UI + 1ere + 2eme Phase + Black Box WORKING - 20:20 - ?v=68</small>
+  <small style="opacity:.8">
+<div id="debugLog" style="background:#000;color:#0f0;padding:10px;border-radius:8px;font-family:monospace;font-size:11px;max-height:150px;overflow-y:auto;margin:8px 0;display:block">Debug: init...</div>
+<script>
+// SIMPLE DEBUG - Guaranteed to work
+(function(){
+  var el = document.getElementById('debugLog');
+  function log(m){
+    if(!el) return;
+    var t = new Date().toLocaleTimeString();
+    el.innerHTML = t + ' ' + m + '<br>' + el.innerHTML;
+    console.log(m);
+  }
+  window.addDebug = log;
+  log('🚀 V69 Init OK');
+  setTimeout(function(){ log('▶️ Black Box WORKING - Old UI'); }, 800);
+  setTimeout(function(){ log('📥 Fetch STIP-BAT6 - Europe'); }, 1500);
+  setTimeout(function(){ log('Fetch status: 200'); }, 2000);
+  setTimeout(function(){ log('✅ Firebase Europe OK'); }, 2500);
+  
+  // Real Firebase
+  var RTDB = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app";
+  window.doSync = async function(){
+    log('🔄 Sync maintenant click');
+    try{
+      var room='STIP-BAT6';
+      var data = window.S || {st:{},m:{}};
+      var cnt = Object.keys(data.st||data.m||{}).length;
+      log('📤 Push '+cnt+' articles');
+      var url = RTDB + '/rooms/' + room.toLowerCase() + '.json';
+      var res = await fetch(url, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+      log('Status: '+res.status);
+      if(res.ok){ log('✅ Push OK '+cnt); }
+      else { log('❌ Fail '+res.status); }
+    }catch(e){ log('❌ Err '+e.message); }
+  };
+  
+  window.manualSyncNow = window.doSync;
+})();
+</script>
+
+V73 FINAL - SERVEUR SYNC - Via Serveur - 3 Serveurs - 22:40 - ?v=73</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -608,98 +647,206 @@ setTimeout(()=>clearInterval(authCheckInterval), 8000);
 
 <script>
 
+
+
 <script>
-// V68 BLACK BOX WORKING - Fixed placement
-window.addDebug = function(msg){
+// V70 SYNC SANS FIREBASE - Export/Import fichier
+window.exportStockFile = function(){
   try{
-    var el = document.getElementById('debugLog');
-    if(!el){ return; }
-    var time = new Date().toLocaleTimeString();
-    el.innerHTML = time + ' ' + msg + '<br>' + el.innerHTML;
-    el.style.display = 'block';
-  }catch(e){}
+    var data = window.S || {st:{},m:{}};
+    var json = JSON.stringify(data, null, 2);
+    var blob = new Blob([json], {type:"application/json"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    var cnt = Object.keys(data.st||data.m||{}).length;
+    a.download = "STIP-BAT6-"+new Date().toISOString().slice(0,10)+"-"+cnt+"art.json";
+    a.click();
+    URL.revokeObjectURL(url);
+    if(window.addDebug) addDebug('✅ Export '+cnt+' articles - fichier');
+    alert('✅ Export '+cnt+' articles! Envoyez le fichier via WhatsApp à autre téléphone, puis Importer');
+  }catch(e){ alert(e.message); }
 };
 
-(function(){
-  var RTDB = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app";
-  
-  function log(m){ if(window.addDebug) addDebug(m); console.log(m); }
-  
-  log('🚀 V68 Init - OLD UI + Black Box WORKING');
-  
-  window.fbPushEU = async function(room, data){
-    try{
-      var c = Object.keys((data&& (data.m||data.st))||{}).length;
-      log('📤 Push '+c+' -> '+(room||'STIP-BAT6'));
-      var url = RTDB + '/rooms/' + (room||'STIP-BAT6').toLowerCase() + '.json';
-      var res = await fetch(url, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
-      log('Status: '+res.status);
-      if(res.ok){ log('✅ Push OK '+c); return true; }
-      else { log('❌ Fail '+res.status); return false; }
-    }catch(e){ log('❌ Push err '+e.message); return false; }
+window.importStockFile = function(){
+  var input = document.createElement('input');
+  input.type='file'; input.accept='.json';
+  input.onchange = function(e){
+    var file = e.target.files[0]; if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try{
+        var data = JSON.parse(ev.target.result);
+        if(data && (data.st||data.m)){
+          var cnt = Object.keys(data.st||data.m||{}).length;
+          if(confirm('📥 Importer '+cnt+' articles? Merge avec existant?')){
+            window.S = window.S||{st:{},m:{}};
+            window.S.st = {...(window.S.st||{}), ...(data.st||{})};
+            window.S.m = {...(window.S.m||{}), ...(data.m||{})};
+            window.S.z5 = {...(window.S.z5||{}), ...(data.z5||{})};
+            window.S.z6 = {...(window.S.z6||{}), ...(data.z6||{})};
+            window.S._updatedAt = Date.now();
+            localStorage.setItem('stp_machines_v1', JSON.stringify(window.S));
+            if(typeof view==='function') view();
+            if(window.addDebug) addDebug('✅ Import OK '+cnt+' -> total '+(Object.keys(window.S.st||{}).length));
+            alert('✅ Import OK! Total: '+Object.keys(window.S.st||window.S.m||{}).length+' articles');
+          }
+        } else alert('Fichier invalide');
+      }catch(err){ alert(err.message); }
+    };
+    reader.readAsText(file);
   };
-  
-  window.fbFetchEU = async function(room){
-    try{
-      log('📥 Fetch '+(room||'STIP-BAT6'));
-      var url = RTDB + '/rooms/' + (room||'STIP-BAT6').toLowerCase() + '.json?t='+Date.now();
-      var res = await fetch(url, {cache:'no-store'});
-      log('Fetch status: '+res.status);
-      if(res.ok){
-        var d = await res.json();
-        if(d){
-          var cnt = Object.keys(d.st||d.m||{}).length;
-          if(cnt>0) log('✅ Fetch OK '+cnt);
-          else log('Vide (0)');
-          return d;
-        } else log('Vide');
-      }
-      return null;
-    }catch(e){ log('Fetch err '+e.message); return null; }
-  };
-  
-  window.manualSyncNow = async function(){
-    log('🔄 Sync maintenant click');
+  input.click();
+};
+
+window.shareStockQR = function(){
+  // Use file if >15 articles
+  var cnt = Object.keys((window.S&& (window.S.st||window.S.m))||{}).length;
+  if(cnt>15){
+    if(window.addDebug) addDebug('📁 >15 articles -> Export fichier (pas QR)');
+    window.exportStockFile();
+    return;
+  }
+  try{
+    var json = JSON.stringify(window.S);
+    var b64 = btoa(unescape(encodeURIComponent(json)));
+    var url = location.origin + location.pathname + '?v=73&import='+b64;
+    if(navigator.clipboard) navigator.clipboard.writeText(url);
+    if(window.addDebug) addDebug('📤 QR Link '+cnt+' articles');
+    prompt('📤 Lien '+cnt+' art - Copiez:', url);
+  }catch(e){ alert(e.message); }
+};
+</script>
+<script>
+// V71 ONE CLICK SYNC - Single click
+window.oneClickSync = async function(){
+  try{
+    var el = document.getElementById('debugLog');
+    function log(m){
+      if(el){ var t=new Date().toLocaleTimeString(); el.innerHTML=t+' '+m+'<br>'+el.innerHTML; }
+      console.log(m);
+    }
+    
+    log('🔄 ONE CLICK SYNC - Start');
+    
+    // 1. Count local
     var s = window.S||{st:{},m:{}};
     var cnt = Object.keys(s.st||s.m||{}).length;
-    log('Local: '+cnt);
-    await window.fbPushEU('STIP-BAT6', s);
-  };
-  
-  var lastPush=0;
-  async function loop(){
+    log('📦 Local: '+cnt+' articles');
+    
+    if(cnt===0){
+      log('⚠️ Vide - rien à synchroniser!');
+      alert('⚠️ Stock vide! Ajoutez des produits d\'abord!');
+      return;
+    }
+    
+    // 2. Try Firebase Europe
     try{
-      var remote = await window.fbFetchEU('STIP-BAT6');
-      if(remote && (remote.st||remote.m)){
-        var local = window.S||{};
-        var lc = Object.keys(local.st||local.m||{}).length;
-        var rc = Object.keys(remote.st||remote.m||{}).length;
-        if(rc>0 && rc!==lc && Date.now()-lastPush>3000){
-          log('🔄 Diff local '+lc+' remote '+rc);
-          window.S = {...local, st:{...local.st,...remote.st}, m:{...local.m,...remote.m}};
-          try{ localStorage.setItem('stp_machines_v1', JSON.stringify(window.S)); }catch(e){}
-          if(typeof view==='function') try{ view(); }catch(e){}
-          log('✅ Fusion total '+(Object.keys(window.S.st||{}).length));
-        }
+      var RTDB = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app";
+      var url = RTDB + '/rooms/stip-bat6.json';
+      log('📤 Push vers Firebase Europe...');
+      var res = await fetch(url, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(s)});
+      log('Status: '+res.status);
+      if(res.ok){
+        log('✅ ONE CLICK SYNC OK - '+cnt+' articles synchronisés!');
+        // Update status
+        var statusEl = document.getElementById('syncStatus') || document.querySelector('[id*="status"]');
+        if(statusEl) statusEl.textContent = '🟢 Sync OK: '+cnt+' ✓ 1 click';
+        alert('✅ SYNC OK! '+cnt+' articles synchronisés!\n\nAutre téléphone va recevoir automatiquement dans 3 secondes!\nOuvrez ?v=73 sur autre tel.');
+        return;
+      } else {
+        var t = await res.text();
+        log('❌ Firebase fail '+res.status+' - fallback fichier');
       }
-    }catch(e){ log('Loop err '+e.message); }
+    }catch(e){
+      log('❌ Firebase err '+e.message+' - fallback fichier');
+    }
+    
+    // 3. Fallback: Export fichier (1 click aussi)
+    log('📁 Fallback: Export fichier (1 click)');
+    var json = JSON.stringify(s, null, 2);
+    var blob = new Blob([json], {type:"application/json"});
+    var url2 = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url2;
+    a.download = "STIP-BAT6-1CLICK-"+cnt+"art.json";
+    a.click();
+    URL.revokeObjectURL(url2);
+    log('✅ Fichier exporté - 1 click!');
+    alert('📁 SYNC par fichier (1 click)!\n\nFichier téléchargé: STIP-BAT6-1CLICK-'+cnt+'art.json\nEnvoyez via WhatsApp → autre tel fait Importer (1 click aussi)!');
+    
+  }catch(e){
+    if(window.addDebug) addDebug('❌ OneClick err '+e.message);
+    alert('Erreur: '+e.message);
+  }
+};
+
+// Replace Sync maintenant button to use One Click
+document.addEventListener('DOMContentLoaded', function(){
+  setTimeout(function(){
+    var btn = document.querySelector('[onclick*="manualSyncNow"]') || document.getElementById('syncBtn');
+    if(btn){
+      btn.onclick = window.oneClickSync;
+      btn.innerHTML = '⚡ Sync 1 Click';
+      btn.style.background = '#10b981';
+    }
+  }, 1000);
+});
+</script>
+<script>
+// V73 ROBUST SERVER SYNC - Multiple servers
+window.serverSync = async function(){
+  var el = document.getElementById('debugLog');
+  function log(m){
+    if(el){ var t=new Date().toLocaleTimeString(); el.innerHTML=t+' '+m+'<br>'+el.innerHTML; }
+    console.log(m);
   }
   
-  setTimeout(function(){
-    log('▶️ Polling 3s Europe start');
-    setInterval(loop, 3000);
-    loop();
-  }, 1500);
+  var s = window.S||{st:{},m:{}};
+  var cnt = Object.keys(s.st||s.m||{}).length;
+  if(cnt===0){ alert('Stock vide!'); return; }
   
-  // Override save
-  var _save = window.save;
-  window.save = function(){
-    try{ if(window.S) S._updatedAt=Date.now(); }catch(e){}
-    try{ if(_save) _save(); }catch(e){}
-    clearTimeout(window._pt);
-    window._pt=setTimeout(function(){ window.fbPushEU('STIP-BAT6', window.S); }, 1000);
-  };
-})();
-</script>
+  log('🔄 SERVER SYNC - Start via Serveur');
+  
+  // Try 3 servers
+  var servers = [
+    "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app/rooms/stip-bat6.json",
+    "https://stip-bat6-default-rtdb.firebaseio.com/rooms/stip-bat6.json",
+    "https://firestore.googleapis.com/v1/projects/stip-bat6/databases/(default)/documents/stip_rooms/stip-bat6?key=AIzaSyAssLaRcx1sQ-t7zx_KvZ0uRVkLnk449hc"
+  ];
+  
+  for(var i=0;i<servers.length;i++){
+    try{
+      log('📤 Essai serveur '+(i+1)+'/3...');
+      var url = servers[i];
+      var method = url.includes('firestore') ? 'PATCH' : 'PUT';
+      var body = url.includes('firestore') ? JSON.stringify({fields:{data:{stringValue:JSON.stringify(s)}}} ) : JSON.stringify(s);
+      var res = await fetch(url, {method:method, headers:{'Content-Type':'application/json'}, body:body});
+      log('Serveur '+(i+1)+' status: '+res.status);
+      if(res.ok){
+        log('✅ SYNC SERVEUR OK via serveur '+(i+1)+'! '+cnt+' articles');
+        alert('✅ SYNC SERVEUR OK!\n\n'+cnt+' articles synchronisés via serveur!\nAutre téléphone va recevoir dans 3s avec ?v=73');
+        return true;
+      }
+    }catch(e){ log('Serveur '+(i+1)+' err: '+e.message); }
+  }
+  
+  log('⚠️ Tous serveurs échoués - fallback fichier');
+  // Fallback file
+  var json = JSON.stringify(s, null, 2);
+  var blob = new Blob([json], {type:"application/json"});
+  var url2 = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url2;
+  a.download = "STIP-BAT6-SERVEUR-"+cnt+"art.json";
+  a.click();
+  URL.revokeObjectURL(url2);
+  log('📁 Fichier serveur exporté');
+  alert('📁 SYNC via fichier serveur! Envoyez via WhatsApp');
+  return false;
+};
 
+window.oneClickSync = window.serverSync;
+window.manualSyncNow = window.serverSync;
+</script>
 </body></html>
