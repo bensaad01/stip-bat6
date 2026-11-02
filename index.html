@@ -82,7 +82,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
   <button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
   <small style="opacity:.8"><div id="debugLog" style="background:#000;color:#0f0;padding:8px;border-radius:8px;font-family:monospace;font-size:11px;max-height:120px;overflow-y:auto;margin:8px 0;white-space:pre-wrap;display:block">Debug: waiting...</div>
-V66 FINAL - OLD UI + 1ere + 2eme Phase + Black Box - 20:05 - ?v=66</small>
+V67 FINAL - OLD UI + 1ere + 2eme Phase + Black Box WORKING - 20:15 - ?v=67</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -607,116 +607,99 @@ setTimeout(()=>clearInterval(authCheckInterval), 8000);
 </script>
 
 <script>
-// V65 BLACK BOX + Firebase Europe Logs
-const RTDB_EU_URL = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app";
-
-function addDebug(msg){
-  try{
-    let el = document.getElementById('debugLog');
-    if(!el){
-      // Create debug box if missing
-      const container = document.getElementById('syncContainer') || document.body;
-      const div = document.createElement('div');
-      div.id = 'debugLog';
-      div.style.cssText = 'background:#000;color:#0f0;padding:8px;border-radius:8px;font-family:monospace;font-size:11px;max-height:120px;overflow-y:auto;margin:8px 0;white-space:pre-wrap;display:block';
-      div.innerHTML = 'Debug: waiting...';
-      // Insert after version line
-      const versionEl = document.querySelector('[id*="version"]') || document.getElementById('versionTag');
-      if(versionEl) versionEl.parentNode.insertBefore(div, versionEl.nextSibling);
-      else {
-        // Find where to insert - after the Connecté line
-        const top = document.querySelector('header') || document.body.firstChild;
-        if(top) top.parentNode.insertBefore(div, top.nextSibling);
-      }
-      el = div;
-    }
-    const time = new Date().toLocaleTimeString();
-    el.innerHTML = time + ' ' + msg + '<br>' + el.innerHTML;
-    el.style.display = 'block';
-    console.log('[FIREBASE] '+msg);
-  }catch(e){ console.log('addDebug err', e); }
-}
-
-async function fbPushEU(room, data){
-  const count = Object.keys(data.m||data.st||{}).length;
-  addDebug('📤 Push '+count+' articles');
-  try{
-    const url = RTDB_EU_URL + '/rooms/' + room.toLowerCase() + '.json';
-    addDebug('URL EU: '+url.substring(0,45)+'...');
-    const res = await fetch(url, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
-    addDebug('Status: '+res.status);
-    if(res.ok){ addDebug('✅ Push OK '+count); setFbStatus('🟢 Firebase EU: '+count+' ✓ sync','ok'); return true; }
-    else { const t=await res.text(); addDebug('❌ Fail '+res.status+' '+t.substring(0,60)); setFbStatus('⚠️ Err '+res.status,'err'); return false; }
-  }catch(e){ addDebug('❌ Exception '+e.message); setFbStatus('⚠️ '+e.message.substring(0,30),'err'); return false; }
-}
-
-async function fbFetchEU(room){
-  addDebug('📥 Fetch '+room);
-  try{
-    const url = RTDB_EU_URL + '/rooms/' + room.toLowerCase() + '.json?t='+Date.now();
-    const res = await fetch(url, {cache:'no-store'});
-    addDebug('Fetch status: '+res.status);
-    if(res.ok){ const d=await res.json(); if(d){ const c=Object.keys(d.m||d.st||{}).length; if(c>0) addDebug('✅ Fetch OK '+c+' articles'); else addDebug('Vide (0)'); return d; } else addDebug('Vide'); }
-  }catch(e){ addDebug('Fetch err '+e.message); }
-  return null;
-}
-
-function setFbStatus(t,type){
-  let el=document.getElementById('status') || document.getElementById('syncStatus');
-  if(!el){
-    // Use Connecté badge
-    el=document.querySelector('[class*="Connect"]') || document.getElementById('status');
+<script>
+// V67 FIX BLACK BOX - Debug working
+(function(){
+  function addDebug(msg){
+    try{
+      const el = document.getElementById('debugLog');
+      if(!el) return;
+      const time = new Date().toLocaleTimeString();
+      el.innerHTML = time + ' ' + msg + '<br>' + el.innerHTML;
+      el.style.display = 'block';
+      console.log('[FB] '+msg);
+    }catch(e){ console.log('debug err', e); }
   }
-  if(el){ el.textContent=t; }
-}
-
-// Override save to auto push
-let lastPush=0;
-let isRemote=false;
-const origSave = window.save;
-window.save = function(){
-  try{ if(window.S) S._updatedAt=Date.now(); }catch(e){}
-  try{ if(origSave) origSave(); }catch(e){}
-  if(!isRemote && Date.now()-lastPush>1000){
-    clearTimeout(window._pushTimeout);
-    window._pushTimeout=setTimeout(()=>{ fbPushEU((window.fbRoom||window.currentRoom||'STIP-BAT6'), S); lastPush=Date.now(); }, 800);
-  }
-};
-
-window.manualSyncNow = async function(){
-  addDebug('🔄 Manual Sync click');
-  const count=Object.keys(S.st||S.m||{}).length;
-  addDebug('Local: '+count);
-  await fbPushEU(currentRoom||'STIP-BAT6', S);
-};
-
-async function syncLoopEU(){
-  try{
-    const remote=await fbFetchEU(currentRoom||'STIP-BAT6');
-    if(remote && (remote.m||remote.st) && Date.now()-lastPush>3000 && !isRemote){
-      const localStr=JSON.stringify(S.m||S.st);
-      const remoteStr=JSON.stringify(remote.m||remote.st);
-      if(localStr!==remoteStr && Object.keys(remote.m||remote.st).length>0){
-        addDebug('🔄 Diff trouvé! Fusion...');
-        isRemote=true;
-        const before=Object.keys(S.m||S.st||{}).length;
-        // Merge
-        S.m={...S.m,...remote.m}; S.st={...S.st,...remote.st}; S.z5={...S.z5,...remote.z5}; S.z6={...S.z6,...remote.z6};
-        S._updatedAt=Date.now();
-        localStorage.setItem('stp_machines_v1', JSON.stringify(S));
-        if(typeof view==='function') view();
-        addDebug('✅ Fusion '+(Object.keys(S.m||S.st||{}).length-before)+' nouveaux');
-        isRemote=false;
+  window.addDebug = addDebug;
+  
+  // Show immediately
+  setTimeout(()=>{ addDebug('🚀 V67 Init - OLD UI + Black Box'); }, 500);
+  setTimeout(()=>{ addDebug('▶️ Polling 3s Europe - Poste '+(window.currentPoste||'1')); }, 1000);
+  
+  const RTDB_EU = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app";
+  
+  window.fbPushEU = async function(room, data){
+    try{
+      const c = Object.keys(data.st||data.m||{}).length;
+      addDebug('📤 Push '+c+' articles -> '+room);
+      const url = RTDB_EU + '/rooms/' + (room||'STIP-BAT6').toLowerCase() + '.json';
+      const res = await fetch(url, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+      addDebug('Status: '+res.status);
+      if(res.ok){ addDebug('✅ Push OK '+c); }
+      else { const t=await res.text(); addDebug('❌ Fail '+res.status); }
+      return res.ok;
+    }catch(e){ addDebug('❌ Push err '+e.message); return false; }
+  };
+  
+  window.fbFetchEU = async function(room){
+    try{
+      addDebug('📥 Fetch '+(room||'STIP-BAT6'));
+      const url = RTDB_EU + '/rooms/' + (room||'STIP-BAT6').toLowerCase() + '.json?t='+Date.now();
+      const res = await fetch(url, {cache:'no-store'});
+      addDebug('Fetch status: '+res.status);
+      if(res.ok){
+        const d=await res.json();
+        if(d && Object.keys(d).length>0){
+          const cnt=Object.keys(d.st||d.m||{}).length;
+          if(cnt>0) addDebug('✅ Fetch OK '+cnt+' articles');
+          else addDebug('Vide (0 articles)');
+          return d;
+        } else addDebug('Vide');
       }
-    }
-  }catch(e){ addDebug('Loop err '+e.message); }
-}
-
-function startPollingEU(){
-  addDebug('▶️ Polling 3s start (Europe)');
-  setInterval(syncLoopEU, 3000);
-  syncLoopEU();
-}
-
-setTimeout(()=>{ addDebug('🚀 V65 Init Europe - OLD UI'); startPollingEU(); }, 1500);
+      return null;
+    }catch(e){ addDebug('Fetch err '+e.message); return null; }
+  };
+  
+  window.manualSyncNow = async function(){
+    addDebug('🔄 Sync maintenant click');
+    const s = window.S||{};
+    const cnt = Object.keys(s.st||s.m||{}).length;
+    addDebug('Local: '+cnt+' articles');
+    await window.fbPushEU('STIP-BAT6', s);
+    setTimeout(async()=>{
+      const r=await window.fbFetchEU('STIP-BAT6');
+      if(r) addDebug('Remote: '+Object.keys(r.st||r.m||{}).length);
+    }, 1000);
+  };
+  
+  // Override save
+  const _save = window.save;
+  window.save = function(){
+    try{ if(window.S) S._updatedAt=Date.now(); }catch(e){}
+    try{ if(_save) _save(); }catch(e){}
+    clearTimeout(window._pushT);
+    window._pushT=setTimeout(()=>{ fbPushEU('STIP-BAT6', S); }, 1000);
+  };
+  
+  // Polling
+  async function loop(){
+    try{
+      const remote=await fbFetchEU('STIP-BAT6');
+      if(remote && (remote.st||remote.m)){
+        const local = window.S||{};
+        const lc=Object.keys(local.st||local.m||{}).length;
+        const rc=Object.keys(remote.st||remote.m||{}).length;
+        if(rc>0 && rc!==lc){
+          addDebug('🔄 Diff local '+lc+' remote '+rc+' -> Fusion');
+          window.S={...local, ...remote, st:{...local.st,...remote.st}, m:{...local.m,...remote.m}};
+          localStorage.setItem('stp_machines_v1', JSON.stringify(window.S));
+          if(typeof view==='function') view();
+          addDebug('✅ Fusion OK total '+(Object.keys(window.S.st||window.S.m||{}).length));
+        }
+      }
+    }catch(e){ addDebug('Loop err '+e.message); }
+  }
+  
+  setTimeout(()=>{ addDebug('▶️ Polling start 3s'); setInterval(loop, 3000); loop(); }, 2000);
+})();
 </script></body></html>
