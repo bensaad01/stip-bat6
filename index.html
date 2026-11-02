@@ -81,7 +81,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <button id="manualSyncBtn" onclick="window.manualSyncNow()" style="background:#00ff88;color:#000;border:0;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,255,136,0.3)">🔄 Sync maintenant</button>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
   <button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">V79 FINAL - SYNC STOCK P1 - Même résultat 2 tél - 101-109 201-210 z5 z6 - 23:25 - ?v=79</small>
+  <small style="opacity:.8">V80 FINAL - CLEAN - Stock P1 meme resultat - 23:35 - ?v=80 - Sync Button WORKING + Alert + Merge</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -599,397 +599,124 @@ setTimeout(()=>clearInterval(authCheckInterval), 8000);
 
 </script>
 
+
 <script>
-// V78 SYNC ONLY STOCK - Ne touche pas base de donner - Affiche dans stock P1
+/* V80 CLEAN SYNC - Stock P1 dans cases - Ne touche pas base */
 (function(){
-  var RTDB_EU = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app";
-  var RTDB_US = "https://stip-bat6-default-rtdb.firebaseio.com";
-  
+  var RTDB = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app/rooms/stip-bat6.json";
   function log(m){
-    var el = document.getElementById('debugLog');
-    if(el){
-      var t = new Date().toLocaleTimeString();
-      el.innerHTML = t+' '+m+'<br>'+el.innerHTML;
-    }
-    console.log('[SYNC] '+m);
-  }
-  window.addDebug = log;
-  
-  log('🚀 V78 Init - Sync stock P1 - Affichage dans cases');
-  
-  // Count stock for current poste
-  function countStock(){
-    try{
-      var s = window.S||{st:{}};
-      var poste = window.currentPoste||'1';
-      var cnt = Object.keys(s.st||{}).filter(function(k){ return k.startsWith('P'+poste+'|'); }).length;
-      return cnt;
-    }catch(e){ return 0; }
-  }
-  window.getTotalCount = countStock;
-  
-  window.serverSync = async function(){
-    var cnt = countStock();
-    if(cnt===0){
-      // Also check if any input has value not yet saved via original handler? Try force save
-      var inputs = document.querySelectorAll('input.s[data-s]');
-      var unsaved = 0;
-      inputs.forEach(function(inp){
-        if(inp.value && inp.value.trim()!==''){
-          var key = inp.dataset.s;
-          if(key && !(window.S && window.S.st && window.S.st[key])){
-            // Save it now
-            if(!window.S) window.S={st:{},m:{}};
-            if(!window.S.st) window.S.st={};
-            window.S.st[key]=inp.value.trim();
-            unsaved++;
-          }
-        }
-      });
-      if(unsaved>0){
-        log('💾 '+unsaved+' cases sauvées avant sync');
-        if(window.save) save();
-        cnt = countStock();
-      }
-    }
-    
-    if(cnt===0){
-      log('⚠️ Stock Poste '+ (window.currentPoste||'1') +' vide! Saisissez d\'abord!');
-      alert('⚠️ Stock Poste '+ (window.currentPoste||'1') +' vide!\n\nSaisissez dans les cases stock P1, par ex:\n101 → choisir 175/70 R13 → Tissu percé 7 → stock P1\nPuis Sync 1 Click!');
-      return;
-    }
-    
-    log('🔄 SERVER SYNC - '+cnt+' articles Poste '+ (window.currentPoste||'1'));
-    
-    var data = window.S;
-    // Try Europe first
-    var servers = [
-      RTDB_EU+'/rooms/stip-bat6.json',
-      RTDB_US+'/rooms/stip-bat6.json'
-    ];
-    
-    for(var i=0;i<servers.length;i++){
-      try{
-        log('📤 Essai serveur '+(i+1)+'/2... Poste '+ (window.currentPoste||'1') +' - '+cnt+' art');
-        var res = await fetch(servers[i], {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
-        log('Serveur '+(i+1)+' status: '+res.status);
-        if(res.ok){
-          log('✅ SYNC OK via serveur '+(i+1)+'! '+cnt+' articles - stock P1');
-          alert('✅ SYNC SERVEUR OK!\n\n'+cnt+' articles Poste '+ (window.currentPoste||'1') +' synchronisés!\nAutre téléphone va recevoir dans 3s avec ?v=79\nMême résultat stock P1 sur les deux téléphones!');
-          return true;
-        }
-      }catch(e){ log('Serveur '+(i+1)+' err '+e.message); }
-    }
-    log('❌ Tous serveurs échoués');
-    return false;
-  };
-  
-  window.oneClickSync = window.serverSync;
-  window.manualSyncNow = window.serverSync;
-  
-  // Fetch and restore to stock P1 fields
-  async function fetchAndRestore(){
-    try{
-      var url = RTDB_EU+'/rooms/stip-bat6.json?t='+Date.now();
-      log('📥 Fetch STIP-BAT6 - Poste '+(window.currentPoste||'1'));
-      var res = await fetch(url, {cache:'no-store'});
-      log('Fetch status: '+res.status);
-      if(!res.ok) return null;
-      
-      var remote = await res.json();
-      if(!remote || !remote.st){
-        log('Vide');
-        return null;
-      }
-      
-      var localCnt = countStock();
-      var remoteCntAll = Object.keys(remote.st||{}).length;
-      var remoteCntPoste = Object.keys(remote.st||{}).filter(function(k){ return k.startsWith('P'+(window.currentPoste||'1')+'|'); }).length;
-      
-      log('✅ Fetch OK - Total '+remoteCntAll+' - Poste '+(window.currentPoste||'1')+': '+remoteCntPoste+' | Local: '+localCnt);
-      
-      // Merge only if remote has more for this poste
-      if(remoteCntPoste>0 && remoteCntPoste!==localCnt){
-        log('🔄 Fusion stock P'+ (window.currentPoste||'1') +' - remote '+remoteCntPoste+' vs local '+localCnt);
-        
-        // Merge S.st
-        if(!window.S) window.S={st:{},m:{},z5:{},z6:{}};
-        if(!window.S.st) window.S.st={};
-        
-        // Merge all remote st keys
-        for(var k in remote.st){
-          if(remote.st[k] && remote.st[k]!=='' ){
-            window.S.st[k] = remote.st[k];
-          }
-        }
-        // Also merge m, z5, z6
-        if(remote.m) window.S.m = {...(window.S.m||{}), ...remote.m};
-        if(remote.z5) window.S.z5 = {...(window.S.z5||{}), ...remote.z5};
-        if(remote.z6) window.S.z6 = {...(window.S.z6||{}), ...remote.z6};
-        
-        window.S._updatedAt = Date.now();
-        window.S._fromServer = true;
-        localStorage.setItem('stp_machines_v1', JSON.stringify(window.S));
-        
-        // Re-render view() to display in stock P1 fields
-        if(typeof view==='function'){
-          view();
-          log('📲 '+remoteCntPoste+' cases affichées dans stock P'+ (window.currentPoste||'1') +'!');
-        }
-        
-        // Also directly set input values for visible stock P1 inputs
-        setTimeout(function(){
-          try{
-            var inputs = document.querySelectorAll('input.s[data-s]');
-            var restored=0;
-            inputs.forEach(function(inp){
-              var key = inp.dataset.s;
-              if(key && window.S.st[key]){
-                if(document.activeElement!==inp){
-                  inp.value = window.S.st[key];
-                  restored++;
-                }
-              }
-            });
-            if(restored>0){
-              log('📲 '+restored+' stock P'+ (window.currentPoste||'1') +' affichés dans les cases!');
-            }
-          }catch(e){ log('Restore err '+e.message); }
-        }, 500);
-        
-        return remote;
-      }
-      return remote;
-    }catch(e){ log('Fetch err '+e.message); return null; }
-  }
-  
-  // Polling every 3s - check for new stock from other phone
-  setTimeout(function(){
-    log('▶️ Polling 3s - Sync stock P1 entre 2 téléphones');
-    setInterval(fetchAndRestore, 3000);
-    fetchAndRestore();
-  }, 1500);
-})();
-</script>
-<script>
-// V79 FIX COUNT OLD+NEW + RESTORE VIEW - Ne touche pas base de données
-(function(){
-  var RTDB_EU = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app/rooms/stip-bat6.json";
-  
-  function log(m){
-    var el = document.getElementById('debugLog');
+    var el=document.getElementById('debugLog');
     if(!el){
-      el = document.createElement('div');
+      el=document.createElement('div');
       el.id='debugLog';
-      el.style.cssText='background:#000;color:#0f0;padding:8px;border-radius:8px;font-family:monospace;font-size:11px;max-height:140px;overflow-y:auto;margin:8px 0;white-space:pre-wrap;display:block';
-      var app = document.getElementById('app');
-      if(app) app.parentNode.insertBefore(el, app);
+      el.style.cssText='background:#000;color:#0f0;padding:8px;border-radius:8px;font-family:monospace;font-size:11px;max-height:120px;overflow-y:auto;margin:8px 0;white-space:pre-wrap';
+      var app=document.getElementById('app');
+      if(app && app.parentNode) app.parentNode.insertBefore(el, app);
     }
-    var t = new Date().toLocaleTimeString();
-    el.innerHTML = t+' '+m+'<br>'+el.innerHTML;
-    console.log('[SYNC V79] '+m);
+    var t=new Date().toLocaleTimeString();
+    el.innerHTML=t+' '+m+'<br>'+el.innerHTML;
   }
-  window.addDebug = log;
+  window.addDebug=log;
+  log('V80 Init - Sync stock P1 - memes cases 2 tel');
   
-  log('🚀 V79 Init - Stock P1 old+new - affichage dans cases');
-  
-  // Count ALL stock for current poste: new P1| keys + old keys that are currently visible
-  function countStock(){
+  function cntStock(){
     try{
-      var s = window.S||{st:{}};
-      var poste = window.currentPoste||'1';
-      var st = s.st||{};
-      // Count new format P1|
-      var cntNew = Object.keys(st).filter(function(k){ return k.startsWith('P'+poste+'|'); }).length;
-      // Count old format without P prefix but with value (for backward compatibility display)
-      // Old data is still counted if it exists and has value
-      var cntOld = Object.keys(st).filter(function(k){ return !k.startsWith('P') && st[k] && st[k]!==''; }).length;
-      // Total count for display: at least count inputs with values currently on page
-      var inputs = document.querySelectorAll('input.s');
-      var cntInputs = 0;
-      inputs.forEach(function(inp){ if(inp.value && inp.value.trim()!=='') cntInputs++; });
-      
-      // Return max to show something
-      return Math.max(cntNew, cntInputs, cntOld>0? cntOld : 0);
-    }catch(e){ return 0; }
-  }
-  
-  function countStockReal(){
-    try{
-      var s = window.S||{st:{}};
-      var poste = window.currentPoste||'1';
-      var st = s.st||{};
-      var cnt = Object.keys(st).filter(function(k){ 
-        // Count if key belongs to current poste (new) OR if it's old format but we have no new key for it
-        if(k.startsWith('P'+poste+'|')) return true;
-        if(!k.startsWith('P') && st[k]) return true;
-        return false;
-      }).length;
-      return cnt;
-    }catch(e){ return 0; }
-  }
-  
-  window.getTotalCount = countStockReal;
-  
-  // Force view() to update stock badge
-  function updateStockBadge(){
-    try{
-      var poste = window.currentPoste||'1';
-      var cnt = countStockReal();
-      // Find badge
-      var badge = document.querySelector('span:last-child');
-      // Better: find element containing "articles en stock"
-      var all = document.querySelectorAll('*');
-      for(var i=0;i<all.length;i++){
-        if(all[i].textContent && all[i].textContent.includes('articles en stock')){
-          // Its parent contains count
-          if(all[i].textContent.includes('0 articles') && cnt>0){
-            all[i].textContent = all[i].textContent.replace(/\d+ articles/, cnt+' articles');
-          }
-          if(cnt>0) log('📦 Stock Poste '+poste+': '+cnt+' articles');
-          break;
+      var s=window.S||{st:{}};
+      var poste=window.currentPoste||'1';
+      var st=s.st||{};
+      var c=0;
+      for(var k in st){
+        if(st[k] && st[k]!==''){
+          if(k.indexOf('P'+poste+'|')===0 || k.indexOf('P')!==0) c++;
         }
       }
-    }catch(e){}
+      return c;
+    }catch(e){return 0;}
   }
+  window.getTotalCount=cntStock;
   
-  window.serverSync = async function(){
-    // First, ensure all visible s inputs are saved to S.st via original handler
-    var inputs = document.querySelectorAll('input.s[data-s]');
-    var unsaved=0;
+  window.serverSync=async function(){
+    var inputs=document.querySelectorAll('input.s[data-s]');
     inputs.forEach(function(inp){
       if(inp.value && inp.value.trim()!==''){
-        var key = inp.dataset.s;
-        if(key){
-          if(!window.S) window.S={st:{},m:{}};
-          if(!window.S.st) window.S.st={};
-          if(!window.S.st[key] || window.S.st[key]!==inp.value.trim()){
-            window.S.st[key]=inp.value.trim();
-            unsaved++;
-          }
-        }
+        if(!window.S) window.S={st:{},m:{}};
+        if(!window.S.st) window.S.st={};
+        window.S.st[inp.dataset.s]=inp.value.trim();
       }
     });
-    if(unsaved>0){
-      log('💾 Sauvegarde '+unsaved+' cases avant sync');
-      if(window.save) save();
-    }
-    
-    var cnt = countStockReal();
-    log('🔄 SERVER SYNC - '+cnt+' articles Poste '+(window.currentPoste||'1')+' - dimensions 101-109,201-210,z5,z6');
-    
+    if(window.save) save();
+    var cnt=cntStock();
+    log('SYNC '+cnt+' art Poste '+(window.currentPoste||'1'));
     if(cnt===0){
-      log('⚠️ Stock vide! Saisissez dans stock P1!');
-      // Don't block, try sync anyway with whatever exists
+      log('Stock vide');
+      alert('Stock vide! Saisissez stock P1');
+      return;
     }
-    
-    var data = window.S;
-    data._updatedAt = Date.now();
-    data._poste = window.currentPoste||'1';
-    
     try{
-      log('📤 Essai serveur Europe - '+cnt+' art...');
-      var res = await fetch(RTDB_EU, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
-      log('Serveur status: '+res.status);
+      var res=await fetch(RTDB,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(window.S)});
+      log('Status '+res.status);
       if(res.ok){
-        log('✅ SYNC OK! '+cnt+' articles - stock P1 affiché même résultat 2 téléphones!');
-        alert('✅ SYNC SERVEUR OK!\n\n'+cnt+' articles Poste '+(window.currentPoste||'1')+' synchronisés!\nAutre téléphone va recevoir dans 3s\nMême résultat stock P1 sur les deux!\nDimensions 101-109, 201-210, zone5, zone6');
+        log('SYNC OK '+cnt+' - meme resultat 2 tel');
+        alert('SYNC OK '+cnt+' articles Poste '+(window.currentPoste||'1')+'\nAutre tel recoit dans 3s ?v=80');
         return true;
       }
-    }catch(e){ log('Sync err '+e.message); }
+    }catch(e){log('Err '+e.message);}
     return false;
   };
+  window.oneClickSync=window.serverSync;
+  window.manualSyncNow=window.serverSync;
   
-  window.oneClickSync = window.serverSync;
-  
-  async function fetchAndRestore(){
+  async function fetchRestore(){
     try{
-      var url = RTDB_EU+'?t='+Date.now();
-      var res = await fetch(url, {cache:'no-store'});
-      if(!res.ok) return null;
-      var remote = await res.json();
-      if(!remote || !remote.st) return null;
-      
-      var poste = window.currentPoste||'1';
-      var localCnt = countStockReal();
-      var remoteCntAll = Object.keys(remote.st||{}).length;
-      var remoteCntPoste = Object.keys(remote.st||{}).filter(function(k){ return k.startsWith('P'+poste+'|') || !k.startsWith('P'); }).length;
-      
-      log('📥 Fetch - Total '+remoteCntAll+' - Poste '+poste+': '+remoteCntPoste+' | Local: '+localCnt);
-      
-      if(remoteCntPoste>0 && JSON.stringify(remote.st)!==JSON.stringify((window.S||{}).st||{})){
-        log('🔄 Fusion - même résultat stock P'+poste+' sur 2 téléphones!');
-        
+      var res=await fetch(RTDB+'?t='+Date.now(),{cache:'no-store'});
+      if(!res.ok) return;
+      var remote=await res.json();
+      if(!remote||!remote.st) return;
+      var poste=window.currentPoste||'1';
+      var localCnt=cntStock();
+      var remoteCnt=0;
+      for(var k in remote.st){ if(remote.st[k]) remoteCnt++; }
+      if(remoteCnt>0 && JSON.stringify(remote.st)!==JSON.stringify((window.S||{}).st||{})){
+        log('Fetch '+remoteCnt+' - fusion P'+poste);
         if(!window.S) window.S={st:{},m:{},z5:{},z6:{}};
         if(!window.S.st) window.S.st={};
-        
-        // Merge all st keys
         var merged=0;
-        for(var k in remote.st){
-          if(remote.st[k] && remote.st[k]!=='' ){
-            if(!window.S.st[k] || window.S.st[k]!==remote.st[k]){
-              window.S.st[k]=remote.st[k];
-              merged++;
-            }
+        for(var k2 in remote.st){
+          if(remote.st[k2] && remote.st[k2]!=='' && window.S.st[k2]!==remote.st[k2]){
+            window.S.st[k2]=remote.st[k2];
+            merged++;
           }
         }
-        // Merge m, z5, z6
-        if(remote.m) window.S.m = {...(window.S.m||{}), ...remote.m};
-        if(remote.z5) window.S.z5 = {...(window.S.z5||{}), ...remote.z5};
-        if(remote.z6) window.S.z6 = {...(window.S.z6||{}), ...remote.z6};
-        
+        if(remote.m) window.S.m=Object.assign({},window.S.m||{},remote.m);
+        if(remote.z5) window.S.z5=Object.assign({},window.S.z5||{},remote.z5);
+        if(remote.z6) window.S.z6=Object.assign({},window.S.z6||{},remote.z6);
         if(merged>0){
-          window.S._updatedAt = Date.now();
-          window.S._fromServer = true;
-          localStorage.setItem('stp_machines_v1', JSON.stringify(window.S));
-          
-          log('📲 '+merged+' cases fusionnées - affichage dans stock P'+poste+'!');
-          
-          // Re-render view() to show in cases stock P1
-          if(typeof view==='function'){
-            view();
-            log('✅ view() re-render - stock P'+poste+' affiché dans les cases!');
-          }
-          
-          // Also directly set input values
+          window.S._updatedAt=Date.now();
+          localStorage.setItem('stp_machines_v1',JSON.stringify(window.S));
+          if(typeof view==='function'){ view(); log('view() - '+merged+' cases dans stock P'+poste); }
           setTimeout(function(){
-            var inputs = document.querySelectorAll('input.s[data-s]');
-            var restored=0;
-            inputs.forEach(function(inp){
-              var key = inp.dataset.s;
+            var inputs2=document.querySelectorAll('input.s[data-s]');
+            var r=0;
+            inputs2.forEach(function(inp){
+              var key=inp.dataset.s;
               if(key && window.S.st[key] && document.activeElement!==inp){
-                inp.value = window.S.st[key];
-                restored++;
-                inp.style.background='#e6ffe6';
-                setTimeout(function(){ inp.style.background=''; }, 2000);
+                inp.value=window.S.st[key];
+                r++;
               }
             });
-            if(restored>0){
-              log('📲 '+restored+' stock P'+poste+' affichés dans les cases! Même résultat!');
-              updateStockBadge();
-            }
-          }, 600);
+            if(r>0) log(r+' stock P'+poste+' affiches dans cases - meme resultat');
+          },600);
         }
-        return remote;
       }
-      return remote;
-    }catch(e){ log('Fetch err '+e.message); return null; }
+    }catch(e){log('Fetch err '+e.message);}
   }
   
-  // Polling 3s
   setTimeout(function(){
-    log('▶️ Polling 3s - sync dimensions 101-109,201-210,zone5,zone6 - même résultat 2 téléphones');
-    log('▶️ Black Box WORKING - Old UI');
-    fetchAndRestore();
-    setInterval(fetchAndRestore, 3000);
-    setInterval(updateStockBadge, 2000);
-  }, 1500);
-  
-  // Initial view restore after load
-  setTimeout(function(){
-    if(typeof view==='function') view();
-    updateStockBadge();
-  }, 2000);
+    log('Polling 3s - 101-109 201-210 z5 z6 - meme resultat');
+    fetchRestore();
+    setInterval(fetchRestore,3000);
+  },2000);
 })();
 </script>
+
 </body></html>
