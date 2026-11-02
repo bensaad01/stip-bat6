@@ -81,47 +81,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <button id="manualSyncBtn" onclick="window.manualSyncNow()" style="background:#00ff88;color:#000;border:0;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,255,136,0.3)">🔄 Sync maintenant</button>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
   <button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">
-<div id="debugLog" style="background:#000;color:#0f0;padding:10px;border-radius:8px;font-family:monospace;font-size:11px;max-height:150px;overflow-y:auto;margin:8px 0;display:block">Debug: init...</div>
-<script>
-// SIMPLE DEBUG - Guaranteed to work
-(function(){
-  var el = document.getElementById('debugLog');
-  function log(m){
-    if(!el) return;
-    var t = new Date().toLocaleTimeString();
-    el.innerHTML = t + ' ' + m + '<br>' + el.innerHTML;
-    console.log(m);
-  }
-  window.addDebug = log;
-  log('🚀 V69 Init OK');
-  setTimeout(function(){ log('▶️ Black Box WORKING - Old UI'); }, 800);
-  setTimeout(function(){ log('📥 Fetch STIP-BAT6 - Europe'); }, 1500);
-  setTimeout(function(){ log('Fetch status: 200'); }, 2000);
-  setTimeout(function(){ log('✅ Firebase Europe OK'); }, 2500);
-  
-  // Real Firebase
-  var RTDB = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app";
-  window.doSync = async function(){
-    log('🔄 Sync maintenant click');
-    try{
-      var room='STIP-BAT6';
-      var data = window.S || {st:{},m:{}};
-      var cnt = Object.keys(data.st||data.m||{}).length;
-      log('📤 Push '+cnt+' articles');
-      var url = RTDB + '/rooms/' + room.toLowerCase() + '.json';
-      var res = await fetch(url, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
-      log('Status: '+res.status);
-      if(res.ok){ log('✅ Push OK '+cnt); }
-      else { log('❌ Fail '+res.status); }
-    }catch(e){ log('❌ Err '+e.message); }
-  };
-  
-  window.manualSyncNow = window.doSync;
-})();
-</script>
-
-V77 FINAL - AFFICHAGE CASES - Bord 2 dans case - 23:10 - ?v=77</small>
+  <small style="opacity:.8">V78 FINAL - SYNC STOCK P1 - Affichage dans cases stock P1 - 23:15 - ?v=78</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -374,13 +334,7 @@ document.addEventListener("input", e=>{
 
 
 const PROJECT_ID="stip-bat6"; const API_KEY="AIzaSyAssLaRcx1sQ-t7zx_KvZ0uRVkLnk449hc"; const COLLECTION="stip_rooms";
-
 function docUrl(room){ const id=room.trim().toLowerCase(); return "https://firestore.googleapis.com/v1/projects/"+PROJECT_ID+"/databases/(default)/documents/"+COLLECTION+"/"+id+"?key="+API_KEY; }
-function rtdbUrl(room){ const id=room.trim().toLowerCase(); return "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app/rooms/"+id+".json"; }
-function rtdbUrlEU(room){ const id=room.trim().toLowerCase(); return "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app/rooms/"+id+".json"; }
-function rtdbUrlUS(room){ const id=room.trim().toLowerCase(); return "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app/rooms/"+id+".json"; }
-
-function docUrlOLD(room){ const id=room.trim().toLowerCase(); return "https://firestore.googleapis.com/v1/projects/"+PROJECT_ID+"/databases/(default)/documents/"+COLLECTION+"/"+id+"?key="+API_KEY; }
 let currentRoom="STIP-BAT6"; let lastPush=0; let isRemote=false; let polling=null;
 async function fetchRemote(room){ try{ const res=await fetch(docUrl(room)); if(res.status===404) return null; if(!res.ok) throw new Error("HTTP "+res.status); const j=await res.json(); if(!j.fields||!j.fields.data) return null; return JSON.parse(j.fields.data.stringValue); }catch(e){ return null; } }
 async function pushRemote(room,data){ try{ const payload={fields:{data:{stringValue:JSON.stringify(data)}, room:{stringValue:room}, updatedAt:{timestampValue:new Date().toISOString()}}}; const res=await fetch(docUrl(room),{method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)}); if(!res.ok) throw new Error("Push "+res.status); lastPush=Date.now(); setStatus("🟢 Connecté: "+room.toUpperCase(),"ok"); return true; }catch(e){ setStatus("🟢 Connecté (local)","ok"); return true; } }
@@ -646,616 +600,175 @@ setTimeout(()=>clearInterval(authCheckInterval), 8000);
 </script>
 
 <script>
-
-
-
-<script>
-// V70 SYNC SANS FIREBASE - Export/Import fichier
-window.exportStockFile = function(){
-  try{
-    var data = window.S || {st:{},m:{}};
-    var json = JSON.stringify(data, null, 2);
-    var blob = new Blob([json], {type:"application/json"});
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    var cnt = Object.keys(data.st||data.m||{}).length;
-    a.download = "STIP-BAT6-"+new Date().toISOString().slice(0,10)+"-"+cnt+"art.json";
-    a.click();
-    URL.revokeObjectURL(url);
-    if(window.addDebug) addDebug('✅ Export '+cnt+' articles - fichier');
-    alert('✅ Export '+cnt+' articles! Envoyez le fichier via WhatsApp à autre téléphone, puis Importer');
-  }catch(e){ alert(e.message); }
-};
-
-window.importStockFile = function(){
-  var input = document.createElement('input');
-  input.type='file'; input.accept='.json';
-  input.onchange = function(e){
-    var file = e.target.files[0]; if(!file) return;
-    var reader = new FileReader();
-    reader.onload = function(ev){
-      try{
-        var data = JSON.parse(ev.target.result);
-        if(data && (data.st||data.m)){
-          var cnt = Object.keys(data.st||data.m||{}).length;
-          if(confirm('📥 Importer '+cnt+' articles? Merge avec existant?')){
-            window.S = window.S||{st:{},m:{}};
-            window.S.st = {...(window.S.st||{}), ...(data.st||{})};
-            window.S.m = {...(window.S.m||{}), ...(data.m||{})};
-            window.S.z5 = {...(window.S.z5||{}), ...(data.z5||{})};
-            window.S.z6 = {...(window.S.z6||{}), ...(data.z6||{})};
-            window.S._updatedAt = Date.now();
-            localStorage.setItem('stp_machines_v1', JSON.stringify(window.S));
-            if(typeof view==='function') view();
-            if(window.addDebug) addDebug('✅ Import OK '+cnt+' -> total '+(Object.keys(window.S.st||{}).length));
-            alert('✅ Import OK! Total: '+Object.keys(window.S.st||window.S.m||{}).length+' articles');
-          }
-        } else alert('Fichier invalide');
-      }catch(err){ alert(err.message); }
-    };
-    reader.readAsText(file);
-  };
-  input.click();
-};
-
-window.shareStockQR = function(){
-  // Use file if >15 articles
-  var cnt = Object.keys((window.S&& (window.S.st||window.S.m))||{}).length;
-  if(cnt>15){
-    if(window.addDebug) addDebug('📁 >15 articles -> Export fichier (pas QR)');
-    window.exportStockFile();
-    return;
-  }
-  try{
-    var json = JSON.stringify(window.S);
-    var b64 = btoa(unescape(encodeURIComponent(json)));
-    var url = location.origin + location.pathname + '?v=77&import='+b64;
-    if(navigator.clipboard) navigator.clipboard.writeText(url);
-    if(window.addDebug) addDebug('📤 QR Link '+cnt+' articles');
-    prompt('📤 Lien '+cnt+' art - Copiez:', url);
-  }catch(e){ alert(e.message); }
-};
-</script>
-<script>
-// V71 ONE CLICK SYNC - Single click
-window.oneClickSync = async function(){
-  try{
-    var el = document.getElementById('debugLog');
-    function log(m){
-      if(el){ var t=new Date().toLocaleTimeString(); el.innerHTML=t+' '+m+'<br>'+el.innerHTML; }
-      console.log(m);
-    }
-    
-    log('🔄 ONE CLICK SYNC - Start');
-    
-    // 1. Count local
-    var s = window.S||{st:{},m:{}};
-    var cnt = window.getTotalCount ? window.getTotalCount() : Object.keys(s.st||{}).length; // FIXED{}).length;
-    log('📦 Local: '+cnt+' articles');
-    
-    if(cnt===0){
-      log('⚠️ Vide - rien à synchroniser!');
-      alert('⚠️ Stock vide! Ajoutez des produits d\'abord!');
-      return;
-    }
-    
-    // 2. Try Firebase Europe
-    try{
-      var RTDB = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app";
-      var url = RTDB + '/rooms/stip-bat6.json';
-      log('📤 Push vers Firebase Europe...');
-      var res = await fetch(url, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(s)});
-      log('Status: '+res.status);
-      if(res.ok){
-        log('✅ ONE CLICK SYNC OK - '+cnt+' articles synchronisés!');
-        // Update status
-        var statusEl = document.getElementById('syncStatus') || document.querySelector('[id*="status"]');
-        if(statusEl) statusEl.textContent = '🟢 Sync OK: '+cnt+' ✓ 1 click';
-        alert('✅ SYNC OK! '+cnt+' articles synchronisés!\n\nAutre téléphone va recevoir automatiquement dans 3 secondes!\nOuvrez ?v=77 sur autre tel.');
-        return;
-      } else {
-        var t = await res.text();
-        log('❌ Firebase fail '+res.status+' - fallback fichier');
-      }
-    }catch(e){
-      log('❌ Firebase err '+e.message+' - fallback fichier');
-    }
-    
-    // 3. Fallback: Export fichier (1 click aussi)
-    log('📁 Fallback: Export fichier (1 click)');
-    var json = JSON.stringify(s, null, 2);
-    var blob = new Blob([json], {type:"application/json"});
-    var url2 = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url2;
-    a.download = "STIP-BAT6-1CLICK-"+cnt+"art.json";
-    a.click();
-    URL.revokeObjectURL(url2);
-    log('✅ Fichier exporté - 1 click!');
-    alert('📁 SYNC par fichier (1 click)!\n\nFichier téléchargé: STIP-BAT6-1CLICK-'+cnt+'art.json\nEnvoyez via WhatsApp → autre tel fait Importer (1 click aussi)!');
-    
-  }catch(e){
-    if(window.addDebug) addDebug('❌ OneClick err '+e.message);
-    alert('Erreur: '+e.message);
-  }
-};
-
-// Replace Sync maintenant button to use One Click
-document.addEventListener('DOMContentLoaded', function(){
-  setTimeout(function(){
-    var btn = document.querySelector('[onclick*="manualSyncNow"]') || document.getElementById('syncBtn');
-    if(btn){
-      btn.onclick = window.oneClickSync;
-      btn.innerHTML = '⚡ Sync 1 Click';
-      btn.style.background = '#10b981';
-    }
-  }, 1000);
-});
-</script>
-<script>
-// V73 ROBUST SERVER SYNC - Multiple servers
-window.serverSync = async function(){
-  var el = document.getElementById('debugLog');
-  function log(m){
-    if(el){ var t=new Date().toLocaleTimeString(); el.innerHTML=t+' '+m+'<br>'+el.innerHTML; }
-    console.log(m);
-  }
-  
-  var s = window.S||{st:{},m:{}};
-  var cnt = window.getTotalCount ? window.getTotalCount() : Object.keys(s.st||{}).length; // FIXED{}).length;
-  if(cnt===0){ alert('Stock vide!'); return; }
-  
-  log('🔄 SERVER SYNC - Start via Serveur');
-  
-  // Try 3 servers
-  var servers = [
-    "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app/rooms/stip-bat6.json",
-    "https://stip-bat6-default-rtdb.firebaseio.com/rooms/stip-bat6.json",
-    "https://firestore.googleapis.com/v1/projects/stip-bat6/databases/(default)/documents/stip_rooms/stip-bat6?key=AIzaSyAssLaRcx1sQ-t7zx_KvZ0uRVkLnk449hc"
-  ];
-  
-  for(var i=0;i<servers.length;i++){
-    try{
-      log('📤 Essai serveur '+(i+1)+'/3...');
-      var url = servers[i];
-      var method = url.includes('firestore') ? 'PATCH' : 'PUT';
-      var body = url.includes('firestore') ? JSON.stringify({fields:{data:{stringValue:JSON.stringify(s)}}} ) : JSON.stringify(s);
-      var res = await fetch(url, {method:method, headers:{'Content-Type':'application/json'}, body:body});
-      log('Serveur '+(i+1)+' status: '+res.status);
-      if(res.ok){
-        log('✅ SYNC SERVEUR OK via serveur '+(i+1)+'! '+cnt+' articles');
-        alert('✅ SYNC SERVEUR OK!\n\n'+cnt+' articles synchronisés via serveur!\nAutre téléphone va recevoir dans 3s avec ?v=77');
-        return true;
-      }
-    }catch(e){ log('Serveur '+(i+1)+' err: '+e.message); }
-  }
-  
-  log('⚠️ Tous serveurs échoués - fallback fichier');
-  // Fallback file
-  var json = JSON.stringify(s, null, 2);
-  var blob = new Blob([json], {type:"application/json"});
-  var url2 = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url2;
-  a.download = "STIP-BAT6-SERVEUR-"+cnt+"art.json";
-  a.click();
-  URL.revokeObjectURL(url2);
-  log('📁 Fichier serveur exporté');
-  alert('📁 SYNC via fichier serveur! Envoyez via WhatsApp');
-  return false;
-};
-
-window.oneClickSync = window.serverSync;
-window.manualSyncNow = window.serverSync;
-</script>
-<script>
-// V74 FIX SAISIR - Enregistrement seulement
+// V78 SYNC ONLY STOCK - Ne touche pas base de donner - Affiche dans stock P1
 (function(){
-  // Fix cnt calculation - count ALL
-  function getTotalCount(){
+  var RTDB_EU = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app";
+  var RTDB_US = "https://stip-bat6-default-rtdb.firebaseio.com";
+  
+  function log(m){
+    var el = document.getElementById('debugLog');
+    if(el){
+      var t = new Date().toLocaleTimeString();
+      el.innerHTML = t+' '+m+'<br>'+el.innerHTML;
+    }
+    console.log('[SYNC] '+m);
+  }
+  window.addDebug = log;
+  
+  log('🚀 V78 Init - Sync stock P1 - Affichage dans cases');
+  
+  // Count stock for current poste
+  function countStock(){
     try{
-      var s = window.S||{};
-      var cnt = 0;
-      cnt += Object.keys(s.st||{}).length;
-      cnt += Object.keys(s.m||{}).length;
-      cnt += Object.keys(s.z5||{}).length;
-      cnt += Object.keys(s.z6||{}).length;
-      // Also count nested in m
-      if(s.m){
-        for(var k in s.m){
-          if(typeof s.m[k]==='object' && s.m[k]!==null){
-            cnt += Object.keys(s.m[k]).length;
-          }
-        }
-      }
+      var s = window.S||{st:{}};
+      var poste = window.currentPoste||'1';
+      var cnt = Object.keys(s.st||{}).filter(function(k){ return k.startsWith('P'+poste+'|'); }).length;
       return cnt;
     }catch(e){ return 0; }
   }
-  window.getTotalCount = getTotalCount;
-
-  // Override serverSync to use correct count
-  var oldServerSync = window.serverSync;
+  window.getTotalCount = countStock;
+  
   window.serverSync = async function(){
-    var cnt = getTotalCount();
+    var cnt = countStock();
     if(cnt===0){
-      var el = document.getElementById('debugLog');
-      if(el){ var t=new Date().toLocaleTimeString(); el.innerHTML=t+' ⚠️ Stock vide! Saisissez d\'abord!<br>'+el.innerHTML; }
-      alert('⚠️ Stock vide!\n\nVous devez saisir au moins 1 produit avant Sync!\n\nAllez à 102 → choisir la mesure → saisir → quantité → Sauvegarder\nPuis Sync 1 Click!');
+      // Also check if any input has value not yet saved via original handler? Try force save
+      var inputs = document.querySelectorAll('input.s[data-s]');
+      var unsaved = 0;
+      inputs.forEach(function(inp){
+        if(inp.value && inp.value.trim()!==''){
+          var key = inp.dataset.s;
+          if(key && !(window.S && window.S.st && window.S.st[key])){
+            // Save it now
+            if(!window.S) window.S={st:{},m:{}};
+            if(!window.S.st) window.S.st={};
+            window.S.st[key]=inp.value.trim();
+            unsaved++;
+          }
+        }
+      });
+      if(unsaved>0){
+        log('💾 '+unsaved+' cases sauvées avant sync');
+        if(window.save) save();
+        cnt = countStock();
+      }
+    }
+    
+    if(cnt===0){
+      log('⚠️ Stock Poste '+ (window.currentPoste||'1') +' vide! Saisissez d\'abord!');
+      alert('⚠️ Stock Poste '+ (window.currentPoste||'1') +' vide!\n\nSaisissez dans les cases stock P1, par ex:\n101 → choisir 175/70 R13 → Tissu percé 7 → stock P1\nPuis Sync 1 Click!');
       return;
     }
-    if(oldServerSync) return await oldServerSync();
+    
+    log('🔄 SERVER SYNC - '+cnt+' articles Poste '+ (window.currentPoste||'1'));
+    
+    var data = window.S;
+    // Try Europe first
+    var servers = [
+      RTDB_EU+'/rooms/stip-bat6.json',
+      RTDB_US+'/rooms/stip-bat6.json'
+    ];
+    
+    for(var i=0;i<servers.length;i++){
+      try{
+        log('📤 Essai serveur '+(i+1)+'/2... Poste '+ (window.currentPoste||'1') +' - '+cnt+' art');
+        var res = await fetch(servers[i], {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+        log('Serveur '+(i+1)+' status: '+res.status);
+        if(res.ok){
+          log('✅ SYNC OK via serveur '+(i+1)+'! '+cnt+' articles - stock P1');
+          alert('✅ SYNC SERVEUR OK!\n\n'+cnt+' articles Poste '+ (window.currentPoste||'1') +' synchronisés!\nAutre téléphone va recevoir dans 3s avec ?v=78\nMême résultat stock P1 sur les deux téléphones!');
+          return true;
+        }
+      }catch(e){ log('Serveur '+(i+1)+' err '+e.message); }
+    }
+    log('❌ Tous serveurs échoués');
+    return false;
   };
+  
   window.oneClickSync = window.serverSync;
   window.manualSyncNow = window.serverSync;
-
-  // Ensure original save still works - restore if broken
-  if(!window._origSave){
-    window._origSave = window.save;
-  }
   
-  // Fix saisir - ensure it saves to localStorage
-  window._fixedSaisir = function(){
+  // Fetch and restore to stock P1 fields
+  async function fetchAndRestore(){
     try{
-      var s = window.S||{st:{},m:{},z5:{},z6:{},log:[]};
-      localStorage.setItem('stp_machines_v1', JSON.stringify(s));
-      var cnt = getTotalCount();
-      var statusEl = document.querySelector('.stock-badge') || document.getElementById('stockCount');
-      if(window.addDebug) addDebug('✅ Saisie enregistrée! Total: '+cnt+' - Stock Poste 1: '+cnt);
-      console.log('Saisie OK cnt='+cnt);
-    }catch(e){ console.log('saisir err', e); }
-  };
-
-  // Hook after any save
-  var origSave = window.save;
-  if(origSave){
-    window.save = function(){
-      try{ return origSave.apply(this, arguments); }catch(e){ console.log('orig save err', e); }
-      finally{ setTimeout(function(){ if(window._fixedSaisir) _fixedSaisir(); }, 300); }
-    };
-  }
-})();
-</script>
-<script>
-// V75 FIX SAISIR DOM COUNT - Count actual inputs
-(function(){
-  window.getTotalCount = function(){
-    try{
-      var s = window.S||{};
-      var cnt = 0;
-      // Count S.st, S.m top level
-      cnt += Object.keys(s.st||{}).length;
-      cnt += Object.keys(s.m||{}).length;
-      cnt += Object.keys(s.z5||{}).length;
-      cnt += Object.keys(s.z6||{}).length;
+      var url = RTDB_EU+'/rooms/stip-bat6.json?t='+Date.now();
+      log('📥 Fetch STIP-BAT6 - Poste '+(window.currentPoste||'1'));
+      var res = await fetch(url, {cache:'no-store'});
+      log('Fetch status: '+res.status);
+      if(!res.ok) return null;
       
-      // If still 0, count inputs in DOM with values
-      if(cnt===0){
-        var inputs = document.querySelectorAll('input[type="number"], input[type="text"], input:not([type])');
-        var filled = 0;
-        inputs.forEach(function(inp){
-          var v = (inp.value||'').trim();
-          if(v && v!=='0' && v!==''){
-            // Check if it's a stock input (has number)
-            if(!isNaN(v) && parseFloat(v)>0) filled++;
-          }
-        });
-        if(filled>0) cnt = filled;
-        
-        // Also check S.m nested
-        if(s.m){
-          for(var k in s.m){
-            if(typeof s.m[k]==='object'){
-              for(var kk in s.m[k]){
-                var val = s.m[k][kk];
-                if(val && (typeof val==='number' && val>0 || typeof val==='string' && val.trim()!=='' && val!=='0')) cnt++;
-              }
-            } else if(s.m[k]) cnt++;
-          }
-        }
+      var remote = await res.json();
+      if(!remote || !remote.st){
+        log('Vide');
+        return null;
       }
-      return cnt;
-    }catch(e){ return 0; }
-  };
-
-  // Auto-save on any input change
-  document.addEventListener('input', function(e){
-    if(e.target.tagName==='INPUT'){
-      clearTimeout(window._autoSaveT);
-      window._autoSaveT = setTimeout(function(){
-        try{
-          // Force save S to localStorage
-          if(window.S){
-            S._updatedAt = Date.now();
-            localStorage.setItem('stp_machines_v1', JSON.stringify(S));
-            var cnt = window.getTotalCount();
-            if(window.addDebug) addDebug('✏️ Saisie auto-save - Total: '+cnt);
-            console.log('Auto-save cnt='+cnt);
+      
+      var localCnt = countStock();
+      var remoteCntAll = Object.keys(remote.st||{}).length;
+      var remoteCntPoste = Object.keys(remote.st||{}).filter(function(k){ return k.startsWith('P'+(window.currentPoste||'1')+'|'); }).length;
+      
+      log('✅ Fetch OK - Total '+remoteCntAll+' - Poste '+(window.currentPoste||'1')+': '+remoteCntPoste+' | Local: '+localCnt);
+      
+      // Merge only if remote has more for this poste
+      if(remoteCntPoste>0 && remoteCntPoste!==localCnt){
+        log('🔄 Fusion stock P'+ (window.currentPoste||'1') +' - remote '+remoteCntPoste+' vs local '+localCnt);
+        
+        // Merge S.st
+        if(!window.S) window.S={st:{},m:{},z5:{},z6:{}};
+        if(!window.S.st) window.S.st={};
+        
+        // Merge all remote st keys
+        for(var k in remote.st){
+          if(remote.st[k] && remote.st[k]!=='' ){
+            window.S.st[k] = remote.st[k];
           }
-        }catch(err){ console.log(err); }
-      }, 500);
-    }
-  });
-
-  // Also on change
-  document.addEventListener('change', function(e){
-    if(e.target.tagName==='INPUT' || e.target.tagName==='SELECT'){
-      try{
-        if(window.S){
-          S._updatedAt = Date.now();
-          localStorage.setItem('stp_machines_v1', JSON.stringify(S));
         }
-      }catch(err){}
-    }
-  });
-})();
-</script>
-<script>
-// V76 FIX ALL CASES - Enregistrement pour TOUTES les cases
-(function(){
-  function saveAllCases(){
-    try{
-      var s = window.S||{st:{},m:{},z5:{},z6:{},log:[]};
-      if(!s.m) s.m={};
-      var inputs = document.querySelectorAll('input');
-      var count=0;
-      inputs.forEach(function(inp, idx){
-        var v = (inp.value||'').trim();
-        // Save every non-empty input, even 0 is valid? Count >0 for sync
-        if(v!=='' ){
-          var key = inp.id || ('case_'+idx+'_'+(inp.placeholder||'input'));
-          // Use machine number if available
-          var machineEl = inp.closest('[data-machine]') || inp.closest('.machine') || inp.parentElement;
-          var machineNum = '';
+        // Also merge m, z5, z6
+        if(remote.m) window.S.m = {...(window.S.m||{}), ...remote.m};
+        if(remote.z5) window.S.z5 = {...(window.S.z5||{}), ...remote.z5};
+        if(remote.z6) window.S.z6 = {...(window.S.z6||{}), ...remote.z6};
+        
+        window.S._updatedAt = Date.now();
+        window.S._fromServer = true;
+        localStorage.setItem('stp_machines_v1', JSON.stringify(window.S));
+        
+        // Re-render view() to display in stock P1 fields
+        if(typeof view==='function'){
+          view();
+          log('📲 '+remoteCntPoste+' cases affichées dans stock P'+ (window.currentPoste||'1') +'!');
+        }
+        
+        // Also directly set input values for visible stock P1 inputs
+        setTimeout(function(){
           try{
-            var text = machineEl ? machineEl.textContent : '';
-            var m = text.match(/\b(10\d|20\d|30\d)\b/);
-            if(m) machineNum = m[0]+'_';
-          }catch(e){}
-          
-          // Save to S.m with unique key
-          if(v && v!=='0'){
-            s.m[machineNum+key] = {value:v, machine:machineNum, field:key, date:new Date().toLocaleString()};
-            count++;
-          } else {
-            // Keep even empty to preserve
-            if(!s.m[machineNum+key]) s.m[machineNum+key] = {value:v};
-          }
-        }
-      });
-      
-      // Also save selects (choisir la mesure)
-      var selects = document.querySelectorAll('select');
-      selects.forEach(function(sel){
-        var v = sel.value;
-        if(v && v!==''){
-          s.m['mesure_'+sel.name||sel.id||'sel'] = {value:v, type:'mesure'};
-          count++;
-        }
-      });
-      
-      s._updatedAt = Date.now();
-      localStorage.setItem('stp_machines_v1', JSON.stringify(s));
-      window.S = s;
-      
-      if(window.addDebug){
-        addDebug('✅ Toutes cases enregistrées: '+count+' | Ex: 145->4, Bord->2, Apex->36');
-      }
-      
-      // Update stock badge
-      var badge = document.querySelector('.stock-badge') || document.getElementById('stockCount');
-      var stockText = document.body.innerHTML.match(/Stock Poste \d+ - Inventaire séparé - (\d+) articles/);
-      // Force view update of stock count if possible
-      try{
-        var stockEl = document.evaluate("//*[contains(text(),'Stock Poste')]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-        if(stockEl){
-          stockEl.textContent = stockEl.textContent.replace(/\d+ articles/, count+' articles');
-        }
-      }catch(e){}
-      
-      return count;
-    }catch(e){ console.log('saveAllCases err', e); return 0; }
-  }
-  
-  window.saveAllCases = saveAllCases;
-  window.getTotalCount = saveAllCases;
-  
-  // Auto-save on every input for ALL cases
-  document.addEventListener('input', function(e){
-    if(e.target.tagName==='INPUT' || e.target.tagName==='SELECT'){
-      clearTimeout(window._allCasesT);
-      window._allCasesT = setTimeout(saveAllCases, 400);
-    }
-  });
-  
-  document.addEventListener('change', function(e){
-    if(e.target.tagName==='INPUT' || e.target.tagName==='SELECT'){
-      clearTimeout(window._allCasesT);
-      window._allCasesT = setTimeout(saveAllCases, 200);
-    }
-  });
-  
-  // Initial save
-  setTimeout(saveAllCases, 1000);
-})();
-</script>
-<script>
-// V77 FIX AFFICHAGE DANS LES CASES - Restore dans les inputs + stock P1
-(function(){
-  function restoreInputsFromS(){
-    try{
-      var s = window.S||{};
-      var restored = 0;
-      // Count all keys in S.m that have value
-      var inputs = document.querySelectorAll('input');
-      inputs.forEach(function(inp, idx){
-        var key = inp.id || ('case_'+idx+'_'+(inp.placeholder||'input'));
-        // Try find matching in S.m
-        for(var k in (s.m||{})){
-          var entry = s.m[k];
-          var val = entry && entry.value !== undefined ? entry.value : entry;
-          // Match by index or by key containing
-          if(k.includes(key) || key.includes(k) || (idx===0 && k.includes('Bord')) || (entry && entry.machine && inp.closest('*') && inp.closest('*').textContent.includes(entry.machine))){
-            // Simple: if entry value matches position
-          }
-        }
-      });
-      
-      // NEW METHOD: Direct restore by iterating S.m in order of inputs
-      var mKeys = Object.keys(s.m||{}).filter(function(k){ 
-        var e = s.m[k]; 
-        var v = e && e.value!==undefined ? e.value : e;
-        return v!=='' && v!==undefined && v!==null;
-      });
-      
-      // For each input that is empty, fill from S.m by position if available
-      var filledInputs = 0;
-      // Also restore stock P1 fields if S.st has data
-      // Better: just apply values from S.m that have value property
-      mKeys.forEach(function(mk, i){
-        var entry = s.m[mk];
-        var val = entry && entry.value!==undefined ? entry.value : entry;
-        if(!val || val==='' || val==='0') return;
+            var inputs = document.querySelectorAll('input.s[data-s]');
+            var restored=0;
+            inputs.forEach(function(inp){
+              var key = inp.dataset.s;
+              if(key && window.S.st[key]){
+                if(document.activeElement!==inp){
+                  inp.value = window.S.st[key];
+                  restored++;
+                }
+              }
+            });
+            if(restored>0){
+              log('📲 '+restored+' stock P'+ (window.currentPoste||'1') +' affichés dans les cases!');
+            }
+          }catch(e){ log('Restore err '+e.message); }
+        }, 500);
         
-        // Find input that corresponds - try by searching all inputs with empty value first, or inputs that already have that value
-        // For now, we store mapping: inputs are saved in order, so restore in order
-        if(inputs[i] && !inputs[i].value){
-          // Only restore if input is still empty to not overwrite current typing
-          // But if data from server, we SHOULD overwrite if different phone
-          // Check if this is from server fetch (last fetch > last local edit)
-          var isFromServer = (s._fromServer && s._updatedAt && (Date.now() - s._updatedAt < 5000));
-          if(isFromServer || true){
-            // Don't overwrite if user is currently focused on this input
-            if(document.activeElement !== inputs[i]){
-              // inputs[i].value = val; // Will do smarter below
-            }
-          }
-        }
-      });
-      
-      // SMARTER: Save with input index, restore by index
-      inputs.forEach(function(inp, idx){
-        var mapKey = 'case_'+idx;
-        // Check direct mapping
-        if(s.m[mapKey] && s.m[mapKey].value){
-          if(document.activeElement !== inp){
-            inp.value = s.m[mapKey].value;
-            inp.style.background = '#e6ffe6';
-            setTimeout(function(){ inp.style.background=''; }, 2000);
-            restored++;
-          }
-        }
-        // Also check legacy keys like case_0_input, etc
-        for(var kk in s.m){
-          if(kk.startsWith('case_'+idx+'_')){
-            var vv = s.m[kk].value || s.m[kk];
-            if(vv && document.activeElement !== inp){
-              inp.value = vv;
-              restored++;
-              break;
-            }
-          }
-        }
-        // Check if S.m has keys that match the input's position in page text
-        // For Bord, Flanc, Apex fields - they are saved with their text context
-        // We'll also check S.m entries that contain the same number
-      });
-      
-      // Restore ALL inputs from S.m by direct index mapping if we saved with index
-      // New save format: S.m._inputs = array of values in order
-      if(s.m._inputs && Array.isArray(s.m._inputs)){
-        s.m._inputs.forEach(function(val, idx){
-          if(val && inputs[idx] && document.activeElement !== inputs[idx]){
-            inputs[idx].value = val;
-            restored++;
-          }
-        });
+        return remote;
       }
-      
-      // Also restore stock P1 display if available
-      var stockEls = document.querySelectorAll('[data-stock], .stock-p1, input[placeholder*="stock"]');
-      // Show count in stock P1 inputs if they exist
-      
-      if(restored>0 && window.addDebug){
-        addDebug('📲 '+restored+' cases affichées dans les champs! Bord, Flanc, Apex...');
-      }
-      
-      return restored;
-    }catch(e){ console.log('restore err', e); return 0; }
+      return remote;
+    }catch(e){ log('Fetch err '+e.message); return null; }
   }
   
-  // Improved saveAllCases that saves array of inputs for easy restore
-  window.saveAllCases = function(){
-    try{
-      var s = window.S||{st:{},m:{},z5:{},z6:{},log:[]};
-      if(!s.m) s.m={};
-      var inputs = document.querySelectorAll('input');
-      var arr = [];
-      var count=0;
-      
-      inputs.forEach(function(inp, idx){
-        var v = (inp.value||'').trim();
-        arr[idx] = v;
-        if(v!=='' && v!=='0'){
-          s.m['case_'+idx] = {value:v, idx:idx, id:inp.id||'', placeholder:inp.placeholder||''};
-          s.m['case_'+idx+'_'+(inp.placeholder||'input')] = {value:v, idx:idx};
-          count++;
-        }
-      });
-      s.m._inputs = arr;
-      s.m._count = count;
-      s.m._lastSave = new Date().toLocaleTimeString();
-      
-      // Save selects (choisir la mesure, dimensions)
-      var selects = document.querySelectorAll('select');
-      selects.forEach(function(sel, si){
-        var v = sel.value;
-        if(v){
-          s.m['select_'+si] = {value:v, type:'select', id:sel.id||''};
-        }
-      });
-      
-      s._updatedAt = Date.now();
-      localStorage.setItem('stp_machines_v1', JSON.stringify(s));
-      window.S = s;
-      
-      if(window.addDebug && count>0){
-        addDebug('✅ '+count+' cases - Bord->2, Flanc 145->4, Apex->36 - enregistrées');
-      }
-      return count;
-    }catch(e){ console.log(e); return 0; }
-  };
-  
-  window.getTotalCount = window.saveAllCases;
-  window.restoreInputsFromS = restoreInputsFromS;
-  
-  // On fetch from server, restore to inputs
-  var originalFetch = window.fetchServerData || null;
-  
-  // Hook into Firebase fetch - after S is updated from server
-  var checkServerData = setInterval(function(){
-    try{
-      var s = window.S;
-      if(s && s._fromServer){
-        // Data came from server, restore
-        restoreInputsFromS();
-        s._fromServer = false;
-        localStorage.setItem('stp_machines_v1', JSON.stringify(s));
-      }
-    }catch(e){}
-  }, 1000);
-  
-  // Also restore on page load
-  setTimeout(restoreInputsFromS, 1500);
-  setTimeout(restoreInputsFromS, 3000);
-  
-  // Auto-save
-  document.addEventListener('input', function(e){
-    if(e.target.tagName==='INPUT' || e.target.tagName==='SELECT'){
-      clearTimeout(window._allCasesT);
-      window._allCasesT = setTimeout(window.saveAllCases, 400);
-    }
-  });
+  // Polling every 3s - check for new stock from other phone
+  setTimeout(function(){
+    log('▶️ Polling 3s - Sync stock P1 entre 2 téléphones');
+    setInterval(fetchAndRestore, 3000);
+    fetchAndRestore();
+  }, 1500);
 })();
 </script>
 </body></html>
