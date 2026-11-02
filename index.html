@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0">
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="Thu, 01 Jan 1970 00:00:00 GMT">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Gestion machines & stock</title>
 <style>
@@ -22,7 +22,7 @@ th,td{border:1px solid var(--bd);padding:4px 6px;text-align:center;white-space:n
 td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight:700;z-index:2}td:first-child{color:#111}
 .n{color:var(--mu);font-size:12px;margin:4px 2px}.btn{padding:8px 12px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px}
 .q{font-size:12px;color:var(--ac);min-width:56px;text-align:left;font-weight:600}
-</style></head><body>
+</style></head><body><div style="background:#ff0000;color:#fff;text-align:center;padding:6px;font-size:13px;font-weight:900;position:fixed;top:0;left:0;right:0;z-index:9999">V48 FINAL - 12:03 - Cache Fixed - ?v=48</div><div style="height:28px"></div>
 
 <!-- AUTH SYSTEM V29 - Protection par carte -->
 <div id="authScreen" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#0f172a,#1e293b);display:flex;align-items:center;justify-content:center;padding:20px">
@@ -81,7 +81,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <button id="manualSyncBtn" onclick="window.manualSyncNow()" style="background:#00ff88;color:#000;border:0;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,255,136,0.3)">🔄 Sync maintenant</button>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
   <button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">V43 FINAL - Sync Button WORKING + Alert + Merge</small>
+  <small style="opacity:.8">V48 FINAL - Cache Fixed - 12:03 - Try Sync</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -334,7 +334,7 @@ document.addEventListener("input", e=>{
 
 
 const PROJECT_ID="stip-bat6"; const API_KEY="AIzaSyAssLaRcx1sQ-t7zx_KvZ0uRVkLnk449hc"; const COLLECTION="stip_rooms";
-function docUrl(room){ const id=room.trim().toLowerCase(); return "https://firestore.googleapis.com/v1/projects/"+PROJECT_ID+"/databases/(default)/documents/"+COLLECTION+"/"+id+"?key="+API_KEY; }
+function docUrl(room){ const id=room.trim().toLowerCase(); return "https://firestore.googleapis.com/v1/projects/"+PROJECT_ID+"/databases/(default)/documents/"+COLLECTION+"/"+id+"?key="+API_KEY+"&t="+Date.now(); }
 let currentRoom="STIP-BAT6"; let lastPush=0; let isRemote=false; let polling=null;
 async function fetchRemote(room){ try{ const res=await fetch(docUrl(room)); if(res.status===404) return null; if(!res.ok) throw new Error("HTTP "+res.status); const j=await res.json(); if(!j.fields||!j.fields.data) return null; return JSON.parse(j.fields.data.stringValue); }catch(e){ return null; } }
 async function pushRemote(room,data){ try{ const payload={fields:{data:{stringValue:JSON.stringify(data)}, room:{stringValue:room}, updatedAt:{timestampValue:new Date().toISOString()}}}; const res=await fetch(docUrl(room),{method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)}); if(!res.ok) throw new Error("Push "+res.status); lastPush=Date.now(); setStatus("🟢 Connecté: "+room.toUpperCase(),"ok"); return true; }catch(e){ setStatus("🟢 Connecté (local)","ok"); return true; } }
