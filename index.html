@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="Thu, 01 Jan 1970 00:00:00 GMT">
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Gestion machines & stock</title>
 <style>
@@ -22,7 +22,7 @@ th,td{border:1px solid var(--bd);padding:4px 6px;text-align:center;white-space:n
 td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight:700;z-index:2}td:first-child{color:#111}
 .n{color:var(--mu);font-size:12px;margin:4px 2px}.btn{padding:8px 12px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px}
 .q{font-size:12px;color:var(--ac);min-width:56px;text-align:left;font-weight:600}
-</style></head><body><div style="background:#ff0000;color:#fff;text-align:center;padding:6px;font-size:13px;font-weight:900;position:fixed;top:0;left:0;right:0;z-index:9999">V49 FINAL - 12:15 - QRhe Fixed - ?v=48</div><div style="height:28px"></div>
+</style></head><body>
 
 <!-- AUTH SYSTEM V29 - Protection par carte -->
 <div id="authScreen" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#0f172a,#1e293b);display:flex;align-items:center;justify-content:center;padding:20px">
@@ -50,10 +50,10 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
           <option value="all">Admin - Tous les postes</option>
         </select>
       </div>
-      <button type="button" onclick="document.getElementById(\'authCard\').value=\'ADMIN\'; document.getElementById(\'authCode\').value=\'admin123\'; document.getElementById(\'authPoste\').value=\'all\'; document.getElementById(\'authBtn\').click();" style="background:#f59e0b;color:#000;padding:10px 16px;border-radius:10px;border:0;font-weight:900;width:100%;margin-bottom:10px">⚡ Connexion ADMIN Rapide (1 click)</button><button id="authBtn" style="background:#0f172a;color:#fff;border:0;padding:14px;border-radius:10px;font-size:16px;font-weight:800;margin-top:8px">🔓 Connexion</button>
+      <button id="authBtn" style="background:#0f172a;color:#fff;border:0;padding:14px;border-radius:10px;font-size:16px;font-weight:800;margin-top:8px">🔓 Connexion</button>
       <div id="authError" style="display:none;background:#fee2e2;color:#991b1b;padding:10px;border-radius:8px;font-size:13px;text-align:center;font-weight:600"></div>
       <div style="background:#f1f5f9;padding:10px;border-radius:8px;font-size:11px;color:#475569">
-        <b><div style="display:flex;gap:6px;margin-bottom:10px"><button type="button" onclick="emergencyReset()" style="background:#ef4444;color:#fff;padding:10px;border-radius:10px;border:0;font-weight:900;font-size:12px;flex:1">🗑️ RESET TOTAL</button><button type="button" onclick="fixAllData()" style="background:#3b82f6;color:#fff;padding:10px;border-radius:10px;border:0;font-weight:900;font-size:12px;flex:1">🔧 Réparer</button></div>Cartes de test:</b><br>
+        <b>Cartes de test:</b><br>
         BAT6-001 / 1234 (Poste 1)<br>
         BAT6-002 / 5678 (Poste 2)<br>
         BAT6-003 / 9999 (Poste 3)<br>
@@ -77,12 +77,11 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
 </div>
 
 <div id="syncBar" style="position:sticky;top:0;z-index:40;background:#0f172a;color:#fff;padding:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-  <div id="status" style="padding:6px 12px;border-radius:999px;font-weight:700;font-size:12px;background:#fef9c3;color:#854d0e">🟡 Initialisation...</div>
-  <div id="debugLog" style="background:#000;color:#0f0;font-size:9px;padding:6px;border-radius:6px;max-height:90px;overflow:auto;width:100%;order:10;display:block;border:1px solid #333">🚀 V59 Init...</div>
+  <div id="status" style="padding:6px 12px;border-radius:999px;font-weight:700;font-size:12px;background:#fef9c3;color:#854d0e">🟢 Connecté</div>
   <button id="manualSyncBtn" onclick="window.manualSyncNow()" style="background:#00ff88;color:#000;border:0;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,255,136,0.3)">🔄 Sync maintenant</button>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
-  <button onclick="shareStock()" style="padding:6px 10px;background:#f59e0b;color:#000;border-radius:999px;font-weight:900;font-size:11px;border:0">📤 Partager</button><button onclick="exportStockFile()" style="padding:6px 10px;background:#10b981;color:#fff;border-radius:999px;font-weight:900;font-size:11px;border:0">📁 Exporter (50+)</button><button onclick="importStockFile()" style="padding:6px 10px;background:#3b82f6;color:#fff;border-radius:999px;font-weight:900;font-size:11px;border:0">📥 Importer</button><button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">V63 FINAL - FORCE VIEW - Data Safe - 19:30 - ?v=63</small>
+  <button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
+  <small style="opacity:.8">V64 FINAL - OLD UI RESTORED + Firebase Europe - 19:45 - ?v=64</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -137,137 +136,86 @@ function cell(m,k){
 }
 function mach(id,fs){const m=M(S.m[id]);return `<div class="m">${m?bar(m):'<div class="bar"></div>'}<div class="bd"><div class="top"><b>${id}</b><select data-m="${id}">${opts(S.m[id])}</select></div>${m?`<div class="g" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:6px;margin-top:6px">${fs.filter(k=>req(m,k)).map(k=>cell(m,k)).join("")}</div>`:""}</div></div>`}
 
-
-// V62 ROBUST VIEW - Always shows content
-let tab = "s";
-let currentPoste = "1";
-
 function view(){
-  try{
-    const a = document.getElementById("app");
-    if(!a){ console.log("No app element"); return; }
-    
-    // Ensure S exists
-    if(typeof S === 'undefined' || !S){
-      window.S = {st:{},m:{},z5:{},z6:{},z5m:{},z6m:{},log:[],_updatedAt:Date.now()};
-    }
-    if(!S.st) S.st = {};
-    if(!S.m) S.m = {};
-    
-    // Highlight buttons
-    try{
-      document.querySelectorAll("[data-t]").forEach(b=>{ 
-        if(b.dataset.t===tab) b.style.background="#1f4e78", b.style.color="#fff"; 
-        else b.style.background="#fff", b.style.color="#000";
-      });
-    }catch(e){}
-    
-    const stCount = Object.keys(S.st||{}).length;
-    const mCount = Object.keys(S.m||{}).length;
-    
-    if(tab==="s"){
-      a.innerHTML=`
-        <div style="padding:12px">
-          <h2 style="color:#1f4e78;margin:0 0 10px 0">🏭 Saisie machines - Poste ${currentPoste} - LE TRIO</h2>
-          <div style="display:flex;gap:8px;margin:10px 0;flex-wrap:wrap">
-            <button class="btn" data-poste="1" style="flex:1;padding:12px;font-weight:800;border-radius:10px;${currentPoste==="1"?"background:#1f4e78;color:#fff":"background:#fff;border:1px solid #ccc"}">🔵 Poste 1</button>
-            <button class="btn" data-poste="2" style="flex:1;padding:12px;font-weight:800;border-radius:10px;${currentPoste==="2"?"background:#d97706;color:#fff":"background:#fff;border:1px solid #ccc"}">🟡 Poste 2</button>
-            <button class="btn" data-poste="3" style="flex:1;padding:12px;font-weight:800;border-radius:10px;${currentPoste==="3"?"background:#dc2626;color:#fff":"background:#fff;border:1px solid #ccc"}">🔴 Poste 3</button>
-            <button class="btn" data-poste="all" style="flex:1;padding:12px;font-weight:800;border-radius:10px;${currentPoste==="all"?"background:#10b981;color:#fff":"background:#fff;border:1px solid #ccc"}">🟢 Tous</button>
-          </div>
-          <div style="background:#dcfce7;padding:8px;border-radius:8px;margin-bottom:12px">✅ Poste actuel: <b>${currentPoste}</b> | Stock: <b>${stCount}</b> articles | Machines: <b>${mCount}</b></div>
-          
-          <div style="background:#fff;border:1px solid #ddd;border-radius:12px;padding:12px;margin-bottom:12px">
-            <h3 style="margin:0 0 8px 0">➕ Ajouter Stock (STIP)</h3>
-            <div style="display:flex;gap:6px;flex-wrap:wrap">
-              <input id="stCode" placeholder="Réf: 101" style="flex:1;min-width:80px;padding:10px;border:1px solid #ccc;border-radius:8px">
-              <input id="stDes" placeholder="Désignation: 165/70 R13" style="flex:2;min-width:120px;padding:10px;border:1px solid #ccc;border-radius:8px">
-              <input id="stQte" type="number" placeholder="Qté: 5" style="flex:1;min-width:60px;padding:10px;border:1px solid #ccc;border-radius:8px">
-              <button onclick="addST()" style="background:#10b981;color:#fff;border:0;padding:10px 20px;border-radius:8px;font-weight:900">✅ Ajouter</button>
-            </div>
-          </div>
-          
-          <div style="background:#fff;border:1px solid #ddd;border-radius:12px;padding:12px">
-            <h3 style="margin:0 0 8px 0">📦 Stock Actuel - Poste ${currentPoste} (${stCount} articles)</h3>
-            <div id="stList">${renderSTList()}</div>
-          </div>
-        </div>
-      `;
-    } else if(tab==="db"){
-      a.innerHTML=`<div style="padding:12px"><h2>📚 Base de données</h2><div style="background:#fff;border:1px solid #ddd;border-radius:12px;padding:12px">${renderSTList()}</div></div>`;
-    } else if(tab==="log"){
-      a.innerHTML=`<div style="padding:12px"><h2>📜 Historique</h2><div style="background:#fff;border:1px solid #ddd;border-radius:12px;padding:12px">${(S.log||[]).slice(0,50).map(l=>`<div style="padding:4px;border-bottom:1px solid #eee">${l.join(' - ')}</div>`).join('')||'Vide'}</div></div>`;
-    } else if(tab==="z6"){
-      a.innerHTML=`<div style="padding:12px"><h2>Zone 6</h2><div>Zone 6 - ${Object.keys(S.z6||{}).length} articles</div></div>`;
-    } else if(tab==="z5"){
-      a.innerHTML=`<div style="padding:12px"><h2>Zone 5 BAT5</h2><div>Zone 5 - ${Object.keys(S.z5||{}).length} articles</div></div>`;
-    }
-  }catch(e){
-    const a=document.getElementById("app");
-    if(a) a.innerHTML=`<div style="padding:20px;background:#fee2e2;color:#991b1b;border-radius:12px">❌ Erreur view: ${e.message}<br><button onclick="location.reload()" style="background:#ef4444;color:#fff;padding:8px 16px;border-radius:8px;border:0;margin-top:10px">🔄 Recharger</button></div>`;
-    console.error("view error", e);
-  }
+ const a=document.getElementById("app");
+ document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===tab));
+  if(tab==="s"){
+  a.innerHTML=`<h2>🏭 Saisie machines - Choisir le Poste de travail</h2>
+  <div style="display:flex;gap:8px;margin:10px 0;flex-wrap:wrap">
+    <button class="btn posteBtn ${currentPoste==="1"?"on":""}" data-poste="1" style="flex:1;padding:12px;font-size:14px;font-weight:800;border-radius:10px;${currentPoste==="1"?"background:#1f4e78;color:#fff;border-color:#1f4e78":"background:#fff"}">🔵 Poste 1<br><small style="font-size:10px">1ère équipe</small></button>
+    <button class="btn posteBtn ${currentPoste==="2"?"on":""}" data-poste="2" style="flex:1;padding:12px;font-size:14px;font-weight:800;border-radius:10px;${currentPoste==="2"?"background:#d97706;color:#fff;border-color:#d97706":"background:#fff"}">🟡 Poste 2<br><small style="font-size:10px">2ème équipe</small></button>
+    <button class="btn posteBtn ${currentPoste==="3"?"on":""}" data-poste="3" style="flex:1;padding:12px;font-size:14px;font-weight:800;border-radius:10px;${currentPoste==="3"?"background:#059669;color:#fff;border-color:#059669":"background:#fff"}">🟢 Poste 3<br><small style="font-size:10px">3ème équipe</small></button>
+  </div>
+  <div style="background:${currentPoste==="1"?"#dbeafe":currentPoste==="2"?"#fef3c7":"#d1fae5"};border:2px solid ${currentPoste==="1"?"#1f4e78":currentPoste==="2"?"#d97706":"#059669"};border-radius:10px;padding:8px 12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+    <span style="font-weight:800;color:${currentPoste==="1"?"#1e40af":currentPoste==="2"?"#92400e":"#065f46"}">📦 Stock Poste ${currentPoste} - Inventaire séparé</span>
+    <span style="font-size:11px;background:#fff;padding:4px 8px;border-radius:999px;border:1px solid #ddd">${Object.keys(S.st).filter(k=>k.startsWith("P"+currentPoste+"|")).length} articles en stock</span>
+  </div>
+  <h2>1ère phase — Machines 101 à 109 (A70) - Poste ${currentPoste}</h2>${P1.map(i=>mach(i,F1)).join("")}<h2>2ème phase — Machines 201 à 210 (T10 + TR10) - Poste ${currentPoste}</h2>${P2.map(i=>mach(i,F2)).join("")}<p class="n">Poste ${currentPoste}: Chaque poste a son propre inventaire. Les stocks saisis ici sont séparés par poste. 19 machines: 101-109 et 201-210.</p>`;
+  document.querySelectorAll(".posteBtn").forEach(b=>{
+    b.onclick=()=>{
+      currentPoste=b.dataset.poste;
+      localStorage.setItem("stip_current_poste", currentPoste);
+      document.getElementById("posteInput").value = "BAT6-P"+currentPoste;
+      localStorage.setItem("stip_poste", "BAT6-P"+currentPoste);
+      view();
+      if(typeof pushRemote!=="undefined") pushRemote(currentRoom,S);
+    };
+  });
+ } else if(tab==="b"){
+  const ks=Object.keys(F);
+  a.innerHTML=`<h2>Conditionnement (modifiable)</h2>${unitCfg()}<details${OPEN?" open":""} style="margin:10px 0"><summary class="n">Produits nécessaires par dimension (cases à cocher)</summary>${reqTab()}</details><h2>Base de données (${D.length} mesures)</h2><div class="w"><table><tr><th>Mesure</th>${ks.map(k=>`<th>${F[k][0]}</th><th>Stock</th>`).join("")}</tr>${D.map(m=>`<tr><td style="background:${gradient(m.c||[])};font-weight:700;border-right:3px solid #0f172a">${m.n}<br>${dots(m.c||[])}<br><small>${(m.c||[]).join(' + ')}</small></td>${ks.map(k=>{if(!req(m,k))return "<td>—</td><td>—</td>";const e=F[k][2];return `<td>${e?`<input class="e" value="${ov(m,k)||""}" data-o="${m.n}|${k}">`:F[k][1](m)}</td><td><input class="s" title="${unit(m,k)}" value="${stk(m,k)}" data-s="${m.n}|${k}"><div class="n q" data-b="1" style="margin:0;font-size:10px">${stk(m,k)?stk(m,k)+" ":""}${unit(m,k).toLowerCase()}</div></td>`}).join("")}</tr>`).join("")}</table></div>`;
+ } else if(tab==="h"){
+  a.innerHTML=`<h2>Historique des changements</h2>${S.log.length?`<div class="w"><table><tr><th>Date</th><th>Machine</th><th>Mesure</th></tr>${S.log.map(l=>`<tr><td style="font-weight:400">${l[0]}</td><td>${l[1]}</td><td>${l[2]||"—"}</td></tr>`).join("")}</table></div>`:'<p class="n">Aucun changement enregistré.</p>'}<p><button class="btn" id="rz">Effacer l’historique</button></p>`;
+  const rz=document.getElementById("rz");if(rz)rz.onclick=()=>{S.log=[];save();view()};
+ } else if(tab==="p6"){
+  let html=`<h2>Zone provisoire 6 - Produits retournés (SANS MACHINES)</h2>
+  <p class="n">Dans la zone on n'a pas de machine, que le produit indiqué - Chaque produit dans une case</p>
+  <div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap"><button id="addRowP6" class="btn" style="background:#10b981">+ Ajouter ligne</button><button id="delRowP6" class="btn" style="background:#ef4444">- Supprimer dernière ligne</button></div>
+  <div class="w"><table><tr><th>#</th><th style='min-width:140px'>📏 Dimension / Mesure</th><th>Flanc en bobine</th><th>Flanc en pièce</th><th>Bond de roulement</th><th>Apex pièce</th><th>Apex talon</th><th>Apex ceinture</th><th>Date entrée zone prov</th><th>Date entrée DLS</th><th>N° carte qualité</th><th>Photo carte qualité</th></tr>`;
+  const rowsP6 = S.z6rows || [{id:1}];
+  rowsP6.forEach((row, idx)=>{
+    html+=`<tr><td style="font-weight:700;background:#f4f5f7">${idx+1}</td>`;
+    html+=`<td><select data-z6m="${row.id}|mes" style="padding:6px;border:1px solid var(--bd);border-radius:6px;min-width:130px;font-weight:600">${opts((S.z6m && S.z6m[row.id+"|mes"])||"")}</select></td>`;
+    html+=`<td><input class="s" data-z6="${row.id}|fb" value="${(S.z6 && S.z6[row.id+"|fb"])||""}" placeholder="Qté" style="width:80px"></td>`;
+    html+=`<td><input class="s" data-z6="${row.id}|fp" value="${(S.z6 && S.z6[row.id+"|fp"])||""}" placeholder="Qté" style="width:80px"></td>`;
+    html+=`<td><input class="s" data-z6="${row.id}|br" value="${(S.z6 && S.z6[row.id+"|br"])||""}" placeholder="Qté" style="width:80px"></td>`;
+    html+=`<td><input class="s" data-z6="${row.id}|ap" value="${(S.z6 && S.z6[row.id+"|ap"])||""}" placeholder="Qté" style="width:80px"></td>`;
+    html+=`<td><input class="s" data-z6="${row.id}|at" value="${(S.z6 && S.z6[row.id+"|at"])||""}" placeholder="Qté" style="width:80px"></td>`;
+    html+=`<td><input class="s" data-z6="${row.id}|ac" value="${(S.z6 && S.z6[row.id+"|ac"])||""}" placeholder="Qté" style="width:80px"></td>`;
+    html+=`<td><input type="date" data-z6d="${row.id}|dateProv" value="${(S.z6d && S.z6d[row.id+"|dateProv"])||""}" style="padding:4px;border:1px solid var(--bd);border-radius:6px"></td>`;
+    html+=`<td><input type="date" data-z6d="${row.id}|dateDLS" value="${(S.z6d && S.z6d[row.id+"|dateDLS"])||""}" style="padding:4px;border:1px solid var(--bd);border-radius:6px"></td>`;
+    html+=`<td><input data-z6c="${row.id}|numCarte" value="${(S.z6c && S.z6c[row.id+"|numCarte"])||""}" placeholder="N° carte" style="padding:4px;border:1px solid var(--bd);border-radius:6px;width:90px"></td>`;
+    html+=`<td><div style="display:flex;flex-direction:column;gap:4px"><input type="file" accept="image/*" capture="environment" data-photo="z6|${row.id}" style="font-size:10px;width:110px">${(S.z6photos && S.z6photos[row.id])?`<img src="${S.z6photos[row.id]}" style="width:70px;height:70px;object-fit:cover;border-radius:6px"><a href="${S.z6photos[row.id]}" target="_blank" style="font-size:10px">Voir</a>`:""}</div></td>`;
+    html+=`</tr>`;
+  });
+  html+=`</table></div><p class="n">Zone provisoire 6: SANS MACHINES - Seulement: Flanc en bobine, Flanc en pièce, Bond de roulement, Apex pièce, Apex talon, Apex ceinture + Date entrée zone prov + Date DLS + N° carte + Photo</p>`;
+  a.innerHTML=html;
+  document.getElementById("addRowP6").onclick=()=>{ S.z6rows.push({id:Date.now()}); save(); view(); };
+  document.getElementById("delRowP6").onclick=()=>{ if(S.z6rows.length>1){ S.z6rows.pop(); save(); view(); } };
+ } else if(tab==="bat5"){
+  let html=`<h2>Zone 5 BAT5 - Produits retournés (SANS MACHINES)</h2>
+  <p class="n">Dans la zone on n'a pas de machine, que le produit indiqué</p>
+  <div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap"><button id="addRowB5" class="btn" style="background:#10b981">+ Ajouter ligne</button><button id="delRowB5" class="btn" style="background:#ef4444">- Supprimer</button></div>
+  <div class="w"><table><tr><th>#</th><th style='min-width:140px'>📏 Dimension / Mesure</th><th>Band de roulement</th><th>Flanc en bobine</th><th>Flanc en pièce</th><th>Tringles tourisme</th><th>Tringles poids lourds</th><th>Apex talon</th><th>Apex ceinture</th><th>Apex bobine</th><th>Ceinture</th><th>Napollo</th><th>Vérifier conforme</th><th>Nom non conforme</th><th>N° carte qualité</th><th>Photo</th></tr>`;
+  const rowsB5 = S.z5rows || [{id:1}];
+  rowsB5.forEach((row, idx)=>{
+    html+=`<tr><td style="font-weight:700;background:#f4f5f7">${idx+1}</td>`;
+    html+=`<td><select data-z5m="${row.id}|mes" style="padding:6px;border:1px solid #1e40af;border-radius:6px;min-width:130px;font-weight:700;background:#eff6ff">${opts((S.z5m && S.z5m[row.id+"|mes"])||"")}</select></td>`;
+    ["br_bat5","fb_bat5","fp_bat5","tt_tour","tt_pl","at_bat5","ac_bat5","ab_bat5","ceint","nap"].forEach(k=>{
+      html+=`<td><input class="s" data-z5="${row.id}|${k}" value="${(S.z5 && S.z5[row.id+"|"+k])||""}" placeholder="Qté" style="width:60px"></td>`;
+    });
+    html+=`<td><select data-z5c="${row.id}|conforme" style="padding:4px;border-radius:6px"><option value="">--</option><option value="Conforme" ${(S.z5c && S.z5c[row.id+"|conforme"]==="Conforme")?"selected":""}>Conforme</option><option value="Non conforme" ${(S.z5c && S.z5c[row.id+"|conforme"]==="Non conforme")?"selected":""}>Non conforme</option></select></td>`;
+    html+=`<td><input data-z5c="${row.id}|nomNonConforme" value="${(S.z5c && S.z5c[row.id+"|nomNonConforme"])||""}" placeholder="Nom" style="padding:4px;border-radius:6px;width:90px"></td>`;
+    html+=`<td><input data-z5c="${row.id}|numCarte" value="${(S.z5c && S.z5c[row.id+"|numCarte"])||""}" placeholder="N°" style="width:70px"></td>`;
+    html+=`<td><div style="display:flex;flex-direction:column;gap:4px"><input type="file" accept="image/*" capture="environment" data-photo="z5|${row.id}" style="font-size:10px;width:100px">${(S.z5photos && S.z5photos[row.id])?`<img src="${S.z5photos[row.id]}" style="width:60px;height:60px;object-fit:cover">`:""}</div></td>`;
+    html+=`</tr>`;
+  });
+  html+=`</table></div>`;
+  a.innerHTML=html;
+  document.getElementById("addRowB5").onclick=()=>{ S.z5rows.push({id:Date.now()}); save(); view(); };
+  document.getElementById("delRowB5").onclick=()=>{ if(S.z5rows.length>1){ S.z5rows.pop(); save(); view(); } };
+ }
 }
-
-function renderSTList(){
-  try{
-    const st = S.st||{};
-    const keys = Object.keys(st);
-    if(keys.length===0) return '<div style="color:#666;padding:20px;text-align:center">📦 Aucun stock - Ajoutez un produit ci-dessus!<br><br>Exemple: 101 | 165/70 R13 | 5</div>';
-    return keys.map(k=>{
-      const item = st[k];
-      let code=k, des='', qte='';
-      if(typeof item === 'object'){ code=item.code||k; des=item.des||item.designation||''; qte=item.qte||item.qty||''; }
-      else { qte=item; }
-      return `<div style="display:flex;gap:8px;padding:8px;border-bottom:1px solid #eee;align-items:center"><b style="min-width:50px">${code}</b><span style="flex:1">${des}</span><b style="background:#dcfce7;padding:4px 8px;border-radius:6px">${qte}</b><button onclick="delST('${k}')" style="background:#ef4444;color:#fff;border:0;padding:4px 8px;border-radius:6px">🗑️</button></div>`;
-    }).join('');
-  }catch(e){ return 'Erreur: '+e.message; }
-}
-
-function addST(){
-  try{
-    const codeEl=document.getElementById('stCode');
-    const desEl=document.getElementById('stDes');
-    const qteEl=document.getElementById('stQte');
-    const code=(codeEl.value||'').trim();
-    const des=(desEl.value||'').trim();
-    const qte=(qteEl.value||'').trim();
-    if(!code){ alert('Entrez Réf!'); return; }
-    if(!qte){ alert('Entrez Qté!'); return; }
-    if(!S.st) S.st={};
-    S.st[code]={code:code, des:des, qte:qte, poste:currentPoste, date:new Date().toLocaleString('fr-FR')};
-    S._updatedAt=Date.now();
-    if(!S.log) S.log=[];
-    S.log.unshift([new Date().toLocaleString('fr-FR'), 'STOCK', `Ajout ${code} ${qte} P${currentPoste}`]);
-    localStorage.setItem("stp_machines_v1", JSON.stringify(S));
-    if(codeEl) codeEl.value=''; if(desEl) desEl.value=''; if(qteEl) qteEl.value='';
-    view();
-    // Auto push Firebase
-    if(typeof fbPush === 'function'){ fbPush(fbRoom||"STIP-BAT6", S); }
-    else if(typeof pushRemote === 'function'){ pushRemote(currentRoom||"STIP-BAT6", S); }
-    if(typeof save === 'function') save();
-  }catch(e){ alert('Erreur add: '+e.message); }
-}
-
-function delST(code){
-  if(!confirm('Supprimer '+code+'?')) return;
-  try{
-    delete S.st[code];
-    S._updatedAt=Date.now();
-    localStorage.setItem("stp_machines_v1", JSON.stringify(S));
-    view();
-    if(typeof fbPush === 'function') fbPush(fbRoom||"STIP-BAT6", S);
-  }catch(e){ alert(e.message); }
-}
-
-// Tab click handler
-document.addEventListener('click', function(e){
-  const btn=e.target.closest('[data-t]');
-  if(btn){ tab=btn.dataset.t; view(); }
-  const pBtn=e.target.closest('[data-poste]');
-  if(pBtn){ currentPoste=pBtn.dataset.poste; view(); }
-});
-
 
  document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{tab=b.dataset.t;view()});view();
 
@@ -385,228 +333,14 @@ document.addEventListener("input", e=>{
 });
 
 
+const PROJECT_ID="stip-bat6"; const API_KEY="AIzaSyAssLaRcx1sQ-t7zx_KvZ0uRVkLnk449hc"; const COLLECTION="stip_rooms";
 
-// V56 SIMPLE FIREBASE EUROPE - WORKING 100%
-const RTDB_EU = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app";
-let currentRoom = "STIP-BAT6";
-let lastPush = 0;
-let isRemote = false;
-let polling = null;
+function docUrl(room){ const id=room.trim().toLowerCase(); return "https://firestore.googleapis.com/v1/projects/"+PROJECT_ID+"/databases/(default)/documents/"+COLLECTION+"/"+id+"?key="+API_KEY; }
+function rtdbUrl(room){ const id=room.trim().toLowerCase(); return "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app/rooms/"+id+".json"; }
+function rtdbUrlEU(room){ const id=room.trim().toLowerCase(); return "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app/rooms/"+id+".json"; }
+function rtdbUrlUS(room){ const id=room.trim().toLowerCase(); return "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app/rooms/"+id+".json"; }
 
-function rtdbUrl(room){
-  return RTDB_EU + "/rooms/" + room.trim().toLowerCase() + ".json";
-}
-
-function addDebug(msg){
-  const el = document.getElementById('debugLog');
-  if(el){
-    const time = new Date().toLocaleTimeString();
-    el.innerHTML = time + " " + msg + "<br>" + el.innerHTML;
-    el.style.display = "block";
-  }
-  console.log("[FIREBASE] " + msg);
-}
-
-async function pushRemote(room, data){
-  const count = Object.keys(data.st||{}).length;
-  addDebug("📤 Push "+count+" articles");
-  try{
-    const url = rtdbUrl(room);
-    addDebug("URL: "+url.substring(0,55)+"...");
-    const res = await fetch(url, {
-      method: "PUT",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(data)
-    });
-    addDebug("Status: "+res.status);
-    if(res.ok){
-      lastPush = Date.now();
-      setStatus("🟢 Firebase EU: "+count+" ✓ sync", "ok");
-      addDebug("✅ Push OK "+count+" articles");
-      return true;
-    } else {
-      const txt = await res.text();
-      addDebug("❌ Fail "+res.status+" "+txt.substring(0,80));
-      setStatus("⚠️ Local: "+count+" - Err "+res.status, "err");
-      return false;
-    }
-  }catch(e){
-    addDebug("❌ Exception "+e.message);
-    setStatus("⚠️ Local: "+count+" - "+e.message.substring(0,30), "err");
-    return false;
-  }
-}
-
-async function fetchRemote(room){
-  addDebug("📥 Fetch "+room);
-  try{
-    const url = rtdbUrl(room) + "?t=" + Date.now();
-    const res = await fetch(url, {cache:"no-store"});
-    addDebug("Fetch status: "+res.status);
-    if(res.ok){
-      const d = await res.json();
-      if(d && d.st){
-        addDebug("✅ Fetch OK "+Object.keys(d.st).length+" articles");
-        return d;
-      } else {
-        addDebug("Fetch vide");
-      }
-    }
-  }catch(e){
-    addDebug("Fetch err "+e.message);
-  }
-  return null;
-}
-
-function setStatus(t,type){
-  const el=document.getElementById("status");
-  if(!el) return;
-  el.textContent=t;
-  el.style.background=type==="ok"?"#dcfce7":type==="err"?"#fee2e2":"#fef9c3";
-  el.style.color=type==="ok"?"#166534":type==="err"?"#991b1b":"#854d0e";
-}
-
-async function syncLoop(){
-  try{
-    const remote = await fetchRemote(currentRoom);
-    if(remote && remote.st){
-      const localCount = Object.keys(S.st||{}).length;
-      const remoteCount = Object.keys(remote.st).length;
-      const localStr = JSON.stringify(S.st);
-      const remoteStr = JSON.stringify(remote.st);
-      if(localStr !== remoteStr && remoteCount>0 && Date.now()-lastPush>3000 && !isRemote){
-        addDebug("🔄 Diff! local "+localCount+" remote "+remoteCount);
-        isRemote = true;
-        const before = Object.keys(S.st).length;
-        S.st = {...S.st, ...remote.st};
-        S.m = {...S.m, ...remote.m};
-        S.z5 = {...S.z5, ...remote.z5};
-        S.z6 = {...S.z6, ...remote.z6};
-        S.z5m = {...S.z5m, ...remote.z5m};
-        S.z6m = {...S.z6m, ...remote.z6m};
-        S._updatedAt = Date.now();
-        localStorage.setItem("stp_machines_v1", JSON.stringify(S));
-        view();
-        addDebug("✅ Fusion "+before+"→"+Object.keys(S.st).length);
-        setStatus("🟢 Auto-sync +"+(Object.keys(S.st).length-before)+" → "+Object.keys(S.st).length, "ok");
-        isRemote = false;
-      }
-    }
-  }catch(e){ addDebug("Loop err "+e.message); }
-}
-
-function startPolling(){
-  if(polling) clearInterval(polling);
-  addDebug("▶️ Polling start (3s)");
-  polling = setInterval(syncLoop, 3000);
-  syncLoop();
-}
-
-const _origSave = save;
-save = function(){
-  try{ S._updatedAt=Date.now(); }catch(e){}
-  _origSave();
-  if(!isRemote){
-    clearTimeout(window._pushTimeout);
-    window._pushTimeout = setTimeout(()=>{ pushRemote(currentRoom, S); }, 500);
-  }
-};
-
-window.manualSyncNow = async function(){
-  addDebug("🔄 Manual sync click");
-  const localCount = Object.keys(S.st||{}).length;
-  addDebug("Local: "+localCount+" articles");
-  const ok = await pushRemote(currentRoom, S);
-  if(ok){
-    setTimeout(async ()=>{
-      const remote = await fetchRemote(currentRoom);
-      if(remote) addDebug("Remote après push: "+Object.keys(remote.st||{}).length);
-    }, 1000);
-  }
-};
-
-// Auto start
-setTimeout(()=>{ addDebug("🚀 Init V56"); startPolling(); }, 1000);
-
-// Export/Import for 50+ produits
-window.shareStock = function(){
-  const count = Object.keys(S.st||{}).length;
-  if(count>15){ window.exportStockFile(); return; }
-  try{
-    const json = JSON.stringify(S);
-    const b64 = btoa(unescape(encodeURIComponent(json)));
-    const url = location.origin + location.pathname + "?v=63&import=" + b64;
-    if(navigator.clipboard) navigator.clipboard.writeText(url);
-    prompt("📤 Lien "+count+" art - Copiez et ouvrez sur autre tel:", url);
-  }catch(e){ alert(e.message); }
-};
-window.exportStockFile = function(){
-  try{
-    const json = JSON.stringify(S, null, 2);
-    const blob = new Blob([json], {type:"application/json"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = "STIP-BAT6-"+new Date().toISOString().slice(0,10)+"-"+Object.keys(S.st||{}).length+"art.json";
-    a.click();
-    URL.revokeObjectURL(url);
-    alert("✅ Export "+Object.keys(S.st||{}).length+" articles! Envoyez via WhatsApp");
-  }catch(e){ alert(e.message); }
-};
-window.importStockFile = function(){
-  const input = document.createElement('input');
-  input.type='file'; input.accept='.json';
-  input.onchange = function(e){
-    const file = e.target.files[0]; if(!file) return;
-    const reader = new FileReader();
-    reader.onload = function(ev){
-      try{
-        const data = JSON.parse(ev.target.result);
-        if(data && data.st){
-          const count = Object.keys(data.st).length;
-          if(confirm("📥 Importer "+count+" articles? Merge avec existant?")){
-            S.st = {...S.st, ...data.st};
-            S.m = {...S.m, ...data.m};
-            S.z5 = {...S.z5, ...data.z5};
-            S.z6 = {...S.z6, ...data.z6};
-            S._updatedAt = Date.now();
-            localStorage.setItem("stp_machines_v1", JSON.stringify(S));
-            view();
-            pushRemote(currentRoom, S);
-            alert("✅ Import OK! Total: "+Object.keys(S.st).length);
-          }
-        }
-      }catch(err){ alert(err.message); }
-    };
-    reader.readAsText(file);
-  };
-  input.click();
-};
-window.checkImport = function(){
-  try{
-    const params = new URLSearchParams(location.search);
-    const imp = params.get('import');
-    if(imp){
-      const json = decodeURIComponent(escape(atob(imp)));
-      const data = JSON.parse(json);
-      if(data && data.st){
-        if(confirm("📥 Importer "+Object.keys(data.st).length+" articles du lien?")){
-          S.st = {...S.st, ...data.st};
-          S.m = {...S.m, ...data.m};
-          S._updatedAt = Date.now();
-          localStorage.setItem("stp_machines_v1", JSON.stringify(S));
-          view();
-          alert("✅ Import OK! "+Object.keys(S.st).length);
-          history.replaceState(null,"",location.pathname+"?v=63");
-        }
-      }
-    }
-  }catch(e){}
-};
-setTimeout(window.checkImport, 1000);
-
-function docUrlOld(room){ const id=room.trim().toLowerCase(); return "https://firestore.googleapis.com/v1/projects/"+PROJECT_ID+"/databases/(default)/documents/"+COLLECTION+"/"+id+"?key="+API_KEY+"&t="+Date.now(); }
-
+function docUrlOLD(room){ const id=room.trim().toLowerCase(); return "https://firestore.googleapis.com/v1/projects/"+PROJECT_ID+"/databases/(default)/documents/"+COLLECTION+"/"+id+"?key="+API_KEY; }
 let currentRoom="STIP-BAT6"; let lastPush=0; let isRemote=false; let polling=null;
 async function fetchRemote(room){ try{ const res=await fetch(docUrl(room)); if(res.status===404) return null; if(!res.ok) throw new Error("HTTP "+res.status); const j=await res.json(); if(!j.fields||!j.fields.data) return null; return JSON.parse(j.fields.data.stringValue); }catch(e){ return null; } }
 async function pushRemote(room,data){ try{ const payload={fields:{data:{stringValue:JSON.stringify(data)}, room:{stringValue:room}, updatedAt:{timestampValue:new Date().toISOString()}}}; const res=await fetch(docUrl(room),{method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)}); if(!res.ok) throw new Error("Push "+res.status); lastPush=Date.now(); setStatus("🟢 Connecté: "+room.toUpperCase(),"ok"); return true; }catch(e){ setStatus("🟢 Connecté (local)","ok"); return true; } }
@@ -665,194 +399,6 @@ if(posteInput){
 
 <script>
 // V29 AUTH SYSTEM
-
-
-// V59 WORKING FIREBASE EUROPE
-const RTDB_EU = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app";
-let fbRoom = "STIP-BAT6";
-let fbLastPush = 0;
-let fbIsRemote = false;
-let fbPolling = null;
-
-function fbUrl(room){ return RTDB_EU + "/rooms/" + room.trim().toLowerCase() + ".json"; }
-
-function fbLog(msg){
-  const el=document.getElementById('debugLog');
-  if(el){ el.innerHTML = new Date().toLocaleTimeString() + " " + msg + "<br>" + el.innerHTML; }
-  console.log("[FB] "+msg);
-}
-
-async function fbPush(room, data){
-  const count = Object.keys(data.st||{}).length;
-  fbLog("📤 Push "+count+" articles");
-  try{
-    const url = fbUrl(room);
-    fbLog("URL EU: "+url.substring(0,60));
-    const res = await fetch(url, {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data)});
-    fbLog("Status: "+res.status);
-    if(res.ok){
-      fbLastPush = Date.now();
-      const el=document.getElementById('status');
-      if(el){ el.textContent="🟢 Firebase EU: "+count+" ✓ sync"; el.style.background="#dcfce7"; el.style.color="#166534"; }
-      fbLog("✅ Push OK "+count);
-      return true;
-    } else {
-      const txt = await res.text();
-      fbLog("❌ Fail "+res.status+" "+txt.substring(0,80));
-      const el=document.getElementById('status');
-      if(el){ el.textContent="⚠️ Err "+res.status+" - Utilisez 📁 Exporter"; el.style.background="#fee2e2"; el.style.color="#991b1b"; }
-      return false;
-    }
-  }catch(e){
-    fbLog("❌ Exception "+e.message);
-    const el=document.getElementById('status');
-    if(el){ el.textContent="⚠️ "+e.message.substring(0,40); el.style.background="#fee2e2"; }
-    return false;
-  }
-}
-
-async function fbFetch(room){
-  fbLog("📥 Fetch "+room);
-  try{
-    const url = fbUrl(room) + "?t="+Date.now();
-    const res = await fetch(url, {cache:"no-store"});
-    fbLog("Fetch status: "+res.status);
-    if(res.ok){
-      const d = await res.json();
-      if(d && d.st){
-        fbLog("✅ Fetch OK "+Object.keys(d.st).length);
-        return d;
-      } else { fbLog("Vide"); }
-    }
-  }catch(e){ fbLog("Fetch err "+e.message); }
-  return null;
-}
-
-async function fbSyncLoop(){
-  try{
-    const remote = await fbFetch(fbRoom);
-    if(remote && remote.st){
-      const localStr = JSON.stringify(S.st);
-      const remoteStr = JSON.stringify(remote.st);
-      if(localStr !== remoteStr && Object.keys(remote.st).length>0 && Date.now()-fbLastPush>3000 && !fbIsRemote){
-        fbLog("🔄 Diff local "+Object.keys(S.st).length+" remote "+Object.keys(remote.st).length);
-        fbIsRemote = true;
-        const before = Object.keys(S.st).length;
-        S.st = {...S.st, ...remote.st};
-        S.m = {...S.m, ...remote.m};
-        S.z5 = {...S.z5, ...remote.z5};
-        S.z6 = {...S.z6, ...remote.z6};
-        S._updatedAt = Date.now();
-        localStorage.setItem("stp_machines_v1", JSON.stringify(S));
-        view();
-        fbLog("✅ Fusion "+before+"→"+Object.keys(S.st).length);
-        const el=document.getElementById('status');
-        if(el){ el.textContent="🟢 Auto-sync +"+(Object.keys(S.st).length-before); el.style.background="#dcfce7"; }
-        fbIsRemote = false;
-      }
-    }
-  }catch(e){ fbLog("Loop err "+e.message); }
-}
-
-
-// V60 FIX VIEW - Ensure content shows
-function ensureView(){
-  try{
-    if(typeof tab === 'undefined') window.tab = "s";
-    if(typeof currentPoste === 'undefined') window.currentPoste = "1";
-    if(typeof S === 'undefined' || !S) S = {st:{},m:{},z5:{},z6:{},z5m:{},z6m:{},log:[],_updatedAt:Date.now()};
-    if(typeof view === 'function') view();
-  }catch(e){ console.log("ensureView err", e); }
-}
-setTimeout(ensureView, 500);
-setTimeout(ensureView, 1500);
-
-// V60 Ensure tab buttons work even if nav selector fails
-document.addEventListener('click', function(e){
-  const btn = e.target.closest('[data-t], .posteBtn');
-  if(!btn) return;
-  if(btn.dataset.t){
-    window.tab = btn.dataset.t;
-    if(typeof view === 'function') view();
-    document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on', b.dataset.t===window.tab));
-  }
-  if(btn.dataset.poste){
-    window.currentPoste = btn.dataset.poste;
-    if(typeof view === 'function') view();
-  }
-});
-
-
-function fbStart(){
-  if(fbPolling) clearInterval(fbPolling);
-  fbLog("▶️ Polling 3s start");
-  fbPolling = setInterval(fbSyncLoop, 3000);
-  fbSyncLoop();
-}
-
-window.manualSyncNow = async function(){
-  fbLog("🔄 Manual Sync click");
-  const count = Object.keys(S.st||{}).length;
-  fbLog("Local: "+count);
-  await fbPush(fbRoom, S);
-};
-
-setTimeout(()=>{ fbLog("🚀 V59 Init Europe"); fbStart(); }, 1000);
-
-// V58 EMERGENCY RESET - Fix all corrupted data
-(function(){
-  try{
-    const raw = localStorage.getItem("stp_machines_v1");
-    if(raw){
-      const parsed = JSON.parse(raw);
-      // Check if corrupted
-      if(!parsed || typeof parsed !== 'object' || (!parsed.st && !parsed.m)){
-        console.log("Corrupted data detected - resetting");
-        localStorage.removeItem("stp_machines_v1");
-      }
-    }
-  }catch(e){
-    console.log("Corrupted JSON - clearing", e);
-    try{ localStorage.removeItem("stp_machines_v1"); localStorage.clear(); }catch(ee){}
-  }
-})();
-
-// Robust S init
-if(typeof S === 'undefined' || !S || !S.st){
-  var S = {
-    st: {},
-    m: {},
-    z5: {},
-    z6: {},
-    z5m: {},
-    z6m: {},
-    log: [],
-    _updatedAt: Date.now()
-  };
-  try{ localStorage.setItem("stp_machines_v1", JSON.stringify(S)); }catch(e){}
-}
-
-window.emergencyReset = function(){
-  if(confirm("⚠️ RESET TOTAL?\n\nCela va supprimer TOUTES les données locales et recharger l'application propre!\n\nConfirmer?")){
-    try{
-      localStorage.clear();
-      sessionStorage.clear();
-      alert("✅ Reset OK! Rechargement...");
-      location.href = location.origin + location.pathname + "?v=63&reset=ok";
-    }catch(e){ alert(e.message); location.reload(); }
-  }
-};
-
-window.fixAllData = function(){
-  try{
-    S = { st: S.st||{}, m: S.m||{}, z5: S.z5||{}, z6: S.z6||{}, z5m: S.z5m||{}, z6m: S.z6m||{}, log: S.log||[], _updatedAt: Date.now() };
-    localStorage.setItem("stp_machines_v1", JSON.stringify(S));
-    alert("✅ Données réparées! "+Object.keys(S.st).length+" articles OK");
-    if(typeof view === 'function') view();
-  }catch(e){ alert("Erreur: "+e.message); }
-};
-
-
 const USERS = {
   "BAT6-001": {code:"1234", name:"Agent Poste 1 - Equipe A", poste:"1", role:"user"},
   "BAT6-002": {code:"5678", name:"Agent Poste 2 - Equipe B", poste:"2", role:"user"},
@@ -969,31 +515,19 @@ function initAuth(){
       return;
     }
 
-    let user=USERS[card];
-    // Try case-insensitive for card
-    if(!user){
-      // Try find card case-insensitive
-      const upper = card.toUpperCase();
-      for(const k in USERS){
-        if(k.toUpperCase()===upper){ user=USERS[k]; break; }
-      }
-    }
-    if(!user){
-      err.style.display='block'; err.textContent='❌ Carte '+card+' inconnue! Cartes: BAT6-001, BAT6-002, BAT6-003, ADMIN';
-      return;
-    }
-    // Code check case-insensitive and trimmed
-    const codeLower = (code||'').trim().toLowerCase();
-    const expectedLower = (user.code||'').toLowerCase();
-    const codeTrimmed = (code||'').trim();
-    if(user.code!==codeTrimmed && expectedLower!==codeLower){
-      err.style.display='block'; 
-      err.innerHTML='❌ Code incorrect pour '+card+'!<br>Attendu: <b>'+user.code+'</b><br>Tapez: <b>admin123</b> en minuscules!<br><br><button onclick="document.getElementById(\'authCode\').value=\'admin123\'; document.getElementById(\'authCode\').type=\'text\';" style="background:#10b981;color:#fff;padding:8px 16px;border-radius:8px;border:0;font-weight:900">📋 Remplir admin123</button>';
+    const user=USERS[card];
+    if(!user || user.code!==code){
+      err.style.display='block'; err.textContent='❌ Carte ou code incorrect! Accès refusé.';
+      // log failed attempt
+      try{
+        S.log.unshift([new Date().toLocaleString('fr-FR'), 'SECURITE', `Tentative échouée carte ${card}`]);
+        save();
+      }catch(e){}
       return;
     }
 
-    // Check poste - ADMIN can access all
-    if(user.poste!=='all' && user.poste!==poste && poste!=='all' && user.role!=='admin'){
+    // Check poste
+    if(user.poste!=='all' && user.poste!==poste && poste!=='all'){
       err.style.display='block'; err.textContent=`❌ Carte ${card} autorisée seulement pour Poste ${user.poste}!`;
       return;
     }
@@ -1071,86 +605,4 @@ setTimeout(()=>clearInterval(authCheckInterval), 8000);
 
 </script>
 
-<script>
-// V63 FORCE APP RENDER - No matter what
-setTimeout(function(){
-  let app = document.getElementById("app");
-  if(!app){
-    // Create app if missing
-    app = document.createElement("div");
-    app.id = "app";
-    app.style.minHeight = "400px";
-    app.style.background = "#fff";
-    app.style.padding = "10px";
-    document.body.appendChild(app);
-    console.log("Created missing #app");
-  }
-  // Force render
-  app.innerHTML = `
-    <div style="padding:12px;background:#fff;color:#000">
-      <h2 style="color:#1f4e78">🏭 Saisie machines - Poste ${window.currentPoste||"1"} - FORCÉ V63</h2>
-      <div style="display:flex;gap:8px;margin:10px 0">
-        <button onclick="currentPoste='1'; view(); fbForceView();" style="flex:1;padding:12px;background:${(window.currentPoste==="1"?"#1f4e78":"#fff")};color:${(window.currentPoste==="1"?"#fff":"#000")};border:1px solid #ccc;border-radius:10px;font-weight:800">🔵 P1</button>
-        <button onclick="currentPoste='2'; view(); fbForceView();" style="flex:1;padding:12px;background:${(window.currentPoste==="2"?"#d97706":"#fff")};color:${(window.currentPoste==="2"?"#fff":"#000")};border:1px solid #ccc;border-radius:10px;font-weight:800">🟡 P2</button>
-        <button onclick="currentPoste='3'; view(); fbForceView();" style="flex:1;padding:12px;background:${(window.currentPoste==="3"?"#dc2626":"#fff")};color:${(window.currentPoste==="3"?"#fff":"#000")};border:1px solid #ccc;border-radius:10px;font-weight:800">🔴 P3</button>
-        <button onclick="currentPoste='all'; view(); fbForceView();" style="flex:1;padding:12px;background:${(window.currentPoste==="all"?"#10b981":"#fff")};color:${(window.currentPoste==="all"?"#fff":"#000")};border:1px solid #ccc;border-radius:10px;font-weight:800">🟢 Tous</button>
-      </div>
-      <div style="background:#fef3c7;padding:8px;border-radius:8px;margin-bottom:10px;font-size:12px">Data: ${Object.keys((window.S&&S.st)||{}).length} articles | Poste: ${window.currentPoste} | Tab: ${window.tab}</div>
-      <div style="border:1px solid #ddd;border-radius:12px;padding:12px;margin-bottom:12px">
-        <h3>➕ Ajouter Stock</h3>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <input id="stCodeV63" placeholder="101" style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px">
-          <input id="stDesV63" placeholder="165/70 R13" style="flex:2;padding:10px;border:1px solid #ccc;border-radius:8px">
-          <input id="stQteV63" type="number" placeholder="5" style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px">
-          <button onclick="addSTV63()" style="background:#10b981;color:#fff;border:0;padding:10px 20px;border-radius:8px;font-weight:900">✅ Ajouter</button>
-        </div>
-      </div>
-      <div style="border:1px solid #ddd;border-radius:12px;padding:12px">
-        <h3>📦 Stock (${Object.keys((window.S&&S.st)||{}).length})</h3>
-        <div id="stListV63">${(function(){ try{ const st=(window.S&&S.st)||{}; const keys=Object.keys(st); if(keys.length===0) return '<div style="color:#666;padding:20px;text-align:center">Aucun stock - Ajoutez!<br>Ex: 101 | 165/70 R13 | 5</div>'; return keys.map(k=>{const it=st[k]; let des='',qte=''; if(typeof it==='object'){des=it.des||''; qte=it.qte||'';} else qte=it; return `<div style="display:flex;gap:8px;padding:8px;border-bottom:1px solid #eee"><b>${k}</b><span style="flex:1">${des}</span><b style="background:#dcfce7;padding:4px 8px;border-radius:6px">${qte}</b></div>`;}).join(''); }catch(e){return e.message;}})()}</div>
-      </div>
-      <div style="margin-top:12px;display:flex;gap:8px">
-        <button onclick="if(confirm('Effacer tout localStorage?')){localStorage.clear(); location.reload();}" style="background:#ef4444;color:#fff;border:0;padding:8px;border-radius:8px">🗑️ Clear Storage</button>
-        <button onclick="view(); fbForceView();" style="background:#3b82f6;color:#fff;border:0;padding:8px;border-radius:8px">🔄 Forcer View</button>
-      </div>
-    </div>
-  `;
-}, 1000);
-
-window.fbForceView = function(){
-  const app=document.getElementById("app");
-  if(!app) return;
-  app.style.display="block";
-  app.style.visibility="visible";
-  app.style.background="#fff";
-  app.style.minHeight="300px";
-};
-
-window.addSTV63 = function(){
-  try{
-    const code=document.getElementById('stCodeV63').value.trim();
-    const des=document.getElementById('stDesV63').value.trim();
-    const qte=document.getElementById('stQteV63').value.trim();
-    if(!code||!qte){ alert('Réf et Qté obligatoires!'); return; }
-    if(!window.S) window.S={st:{},m:{},z5:{},z6:{},log:[]};
-    if(!S.st) S.st={};
-    S.st[code]={code,des,qte,poste:currentPoste||"1",date:new Date().toLocaleString()};
-    localStorage.setItem("stp_machines_v1", JSON.stringify(S));
-    alert("✅ Ajouté "+code+" !");
-    location.reload();
-  }catch(e){ alert(e.message); }
-};
-
-// Also hook to existing view
-const oldView = window.view;
-window.view = function(){
-  try{ if(oldView) oldView(); }catch(e){ console.log("old view fail", e); }
-  setTimeout(function(){
-    const app=document.getElementById("app");
-    if(app && app.innerHTML.trim().length<50){
-      console.log("App vide - force render");
-      if(window.fbForceView) fbForceView();
-    }
-  }, 500);
-};
-</script></body></html>
+</body></html>
