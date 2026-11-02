@@ -82,7 +82,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <button id="manualSyncBtn" onclick="window.manualSyncNow()" style="background:#00ff88;color:#000;border:0;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,255,136,0.3)">🔄 Sync maintenant</button>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
   <button onclick="shareStock()" style="padding:6px 10px;background:#f59e0b;color:#000;border-radius:999px;font-weight:900;font-size:11px;border:0">📤 Partager</button><button onclick="exportStockFile()" style="padding:6px 10px;background:#10b981;color:#fff;border-radius:999px;font-weight:900;font-size:11px;border:0">📁 Exporter (50+)</button><button onclick="importStockFile()" style="padding:6px 10px;background:#3b82f6;color:#fff;border-radius:999px;font-weight:900;font-size:11px;border:0">📥 Importer</button><button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">V62 FINAL - View ROBUST - Trio + Data - 19:15 - ?v=62</small>
+  <small style="opacity:.8">V63 FINAL - FORCE VIEW - Data Safe - 19:30 - ?v=63</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -535,7 +535,7 @@ window.shareStock = function(){
   try{
     const json = JSON.stringify(S);
     const b64 = btoa(unescape(encodeURIComponent(json)));
-    const url = location.origin + location.pathname + "?v=62&import=" + b64;
+    const url = location.origin + location.pathname + "?v=63&import=" + b64;
     if(navigator.clipboard) navigator.clipboard.writeText(url);
     prompt("📤 Lien "+count+" art - Copiez et ouvrez sur autre tel:", url);
   }catch(e){ alert(e.message); }
@@ -597,7 +597,7 @@ window.checkImport = function(){
           localStorage.setItem("stp_machines_v1", JSON.stringify(S));
           view();
           alert("✅ Import OK! "+Object.keys(S.st).length);
-          history.replaceState(null,"",location.pathname+"?v=62");
+          history.replaceState(null,"",location.pathname+"?v=63");
         }
       }
     }
@@ -838,7 +838,7 @@ window.emergencyReset = function(){
       localStorage.clear();
       sessionStorage.clear();
       alert("✅ Reset OK! Rechargement...");
-      location.href = location.origin + location.pathname + "?v=62&reset=ok";
+      location.href = location.origin + location.pathname + "?v=63&reset=ok";
     }catch(e){ alert(e.message); location.reload(); }
   }
 };
@@ -1071,4 +1071,86 @@ setTimeout(()=>clearInterval(authCheckInterval), 8000);
 
 </script>
 
-</body></html>
+<script>
+// V63 FORCE APP RENDER - No matter what
+setTimeout(function(){
+  let app = document.getElementById("app");
+  if(!app){
+    // Create app if missing
+    app = document.createElement("div");
+    app.id = "app";
+    app.style.minHeight = "400px";
+    app.style.background = "#fff";
+    app.style.padding = "10px";
+    document.body.appendChild(app);
+    console.log("Created missing #app");
+  }
+  // Force render
+  app.innerHTML = `
+    <div style="padding:12px;background:#fff;color:#000">
+      <h2 style="color:#1f4e78">🏭 Saisie machines - Poste ${window.currentPoste||"1"} - FORCÉ V63</h2>
+      <div style="display:flex;gap:8px;margin:10px 0">
+        <button onclick="currentPoste='1'; view(); fbForceView();" style="flex:1;padding:12px;background:${(window.currentPoste==="1"?"#1f4e78":"#fff")};color:${(window.currentPoste==="1"?"#fff":"#000")};border:1px solid #ccc;border-radius:10px;font-weight:800">🔵 P1</button>
+        <button onclick="currentPoste='2'; view(); fbForceView();" style="flex:1;padding:12px;background:${(window.currentPoste==="2"?"#d97706":"#fff")};color:${(window.currentPoste==="2"?"#fff":"#000")};border:1px solid #ccc;border-radius:10px;font-weight:800">🟡 P2</button>
+        <button onclick="currentPoste='3'; view(); fbForceView();" style="flex:1;padding:12px;background:${(window.currentPoste==="3"?"#dc2626":"#fff")};color:${(window.currentPoste==="3"?"#fff":"#000")};border:1px solid #ccc;border-radius:10px;font-weight:800">🔴 P3</button>
+        <button onclick="currentPoste='all'; view(); fbForceView();" style="flex:1;padding:12px;background:${(window.currentPoste==="all"?"#10b981":"#fff")};color:${(window.currentPoste==="all"?"#fff":"#000")};border:1px solid #ccc;border-radius:10px;font-weight:800">🟢 Tous</button>
+      </div>
+      <div style="background:#fef3c7;padding:8px;border-radius:8px;margin-bottom:10px;font-size:12px">Data: ${Object.keys((window.S&&S.st)||{}).length} articles | Poste: ${window.currentPoste} | Tab: ${window.tab}</div>
+      <div style="border:1px solid #ddd;border-radius:12px;padding:12px;margin-bottom:12px">
+        <h3>➕ Ajouter Stock</h3>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <input id="stCodeV63" placeholder="101" style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px">
+          <input id="stDesV63" placeholder="165/70 R13" style="flex:2;padding:10px;border:1px solid #ccc;border-radius:8px">
+          <input id="stQteV63" type="number" placeholder="5" style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px">
+          <button onclick="addSTV63()" style="background:#10b981;color:#fff;border:0;padding:10px 20px;border-radius:8px;font-weight:900">✅ Ajouter</button>
+        </div>
+      </div>
+      <div style="border:1px solid #ddd;border-radius:12px;padding:12px">
+        <h3>📦 Stock (${Object.keys((window.S&&S.st)||{}).length})</h3>
+        <div id="stListV63">${(function(){ try{ const st=(window.S&&S.st)||{}; const keys=Object.keys(st); if(keys.length===0) return '<div style="color:#666;padding:20px;text-align:center">Aucun stock - Ajoutez!<br>Ex: 101 | 165/70 R13 | 5</div>'; return keys.map(k=>{const it=st[k]; let des='',qte=''; if(typeof it==='object'){des=it.des||''; qte=it.qte||'';} else qte=it; return `<div style="display:flex;gap:8px;padding:8px;border-bottom:1px solid #eee"><b>${k}</b><span style="flex:1">${des}</span><b style="background:#dcfce7;padding:4px 8px;border-radius:6px">${qte}</b></div>`;}).join(''); }catch(e){return e.message;}})()}</div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button onclick="if(confirm('Effacer tout localStorage?')){localStorage.clear(); location.reload();}" style="background:#ef4444;color:#fff;border:0;padding:8px;border-radius:8px">🗑️ Clear Storage</button>
+        <button onclick="view(); fbForceView();" style="background:#3b82f6;color:#fff;border:0;padding:8px;border-radius:8px">🔄 Forcer View</button>
+      </div>
+    </div>
+  `;
+}, 1000);
+
+window.fbForceView = function(){
+  const app=document.getElementById("app");
+  if(!app) return;
+  app.style.display="block";
+  app.style.visibility="visible";
+  app.style.background="#fff";
+  app.style.minHeight="300px";
+};
+
+window.addSTV63 = function(){
+  try{
+    const code=document.getElementById('stCodeV63').value.trim();
+    const des=document.getElementById('stDesV63').value.trim();
+    const qte=document.getElementById('stQteV63').value.trim();
+    if(!code||!qte){ alert('Réf et Qté obligatoires!'); return; }
+    if(!window.S) window.S={st:{},m:{},z5:{},z6:{},log:[]};
+    if(!S.st) S.st={};
+    S.st[code]={code,des,qte,poste:currentPoste||"1",date:new Date().toLocaleString()};
+    localStorage.setItem("stp_machines_v1", JSON.stringify(S));
+    alert("✅ Ajouté "+code+" !");
+    location.reload();
+  }catch(e){ alert(e.message); }
+};
+
+// Also hook to existing view
+const oldView = window.view;
+window.view = function(){
+  try{ if(oldView) oldView(); }catch(e){ console.log("old view fail", e); }
+  setTimeout(function(){
+    const app=document.getElementById("app");
+    if(app && app.innerHTML.trim().length<50){
+      console.log("App vide - force render");
+      if(window.fbForceView) fbForceView();
+    }
+  }, 500);
+};
+</script></body></html>
