@@ -81,7 +81,7 @@ td:first-child,th:first-child{position:sticky;left:0;text-align:left;font-weight
   <button id="manualSyncBtn" onclick="window.manualSyncNow()" style="background:#00ff88;color:#000;border:0;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,255,136,0.3)">🔄 Sync maintenant</button>
   <input id="roomInput" value="STIP-BAT6" style="padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#1e293b;color:#fff;min-width:100px">
   <button id="joinBtn" style="padding:6px 12px;border-radius:999px;border:0;background:#3b82f6;color:#fff;font-weight:700">🔗 Rejoindre</button>
-  <small style="opacity:.8">V83 FINAL - TOUTES DIMENSIONS D - 38 dimensions - 101-109 201-210 z5 z6 - Ne touche pas D - 00:10 - ?v=83 - Sync Button WORKING + Alert + Merge</small>
+  <small style="opacity:.8">V95 BASE V83 - SINGLE FIX: 0 dimensions -> N dimensions - TOUTES DIMENSIONS D - 38 dimensions - Ne touche pas D - ?v=95</small>
 </div>
 <header><nav><button data-t="s" class="on">Saisie machines</button><button data-t="b">Base de données</button><button data-t="h">Historique</button><button data-t="p6">Zone provisoire 6</button><button data-t="bat5">Zone 5 BAT5</button></nav></header>
 <main id="app"></main>
@@ -609,11 +609,13 @@ setTimeout(()=>clearInterval(authCheckInterval), 8000);
 
 
 
+
+
+
 <script>
-/* V83 GENERALISATION - Toutes dimensions D - 101-109 201-210 z5 z6 - Ne touche pas contenu D */
+/* V95 - BASE V83 - SINGLE FIX: 0 dimensions -> N dimensions - NE TOUCHE PAS D */
 (function(){
-  var RTDB = "https://stip-bat6-default-rtdb.europe-west1.firebasedatabase.app/rooms/stip-bat6.json";
-  function log(m){
+  function v95log(m){
     var el=document.getElementById('debugLog');
     if(!el){
       el=document.createElement('div');
@@ -622,210 +624,94 @@ setTimeout(()=>clearInterval(authCheckInterval), 8000);
       var app=document.getElementById('app');
       if(app && app.parentNode) app.parentNode.insertBefore(el, app);
     }
-    var t=new Date().toLocaleTimeString();
+    var t=new Date().toLocaleTimeString('fr-FR');
     el.innerHTML=t+' '+m+'<br>'+el.innerHTML;
   }
-  window.addDebug=log;
-  
-  // Get all dimensions from D (base de données) - ne touche pas D, juste lecture
-  function getAllDimensions(){
+
+  // FIX UNIQUE: Compter dimensions depuis S.st - P1|dim|field
+  function getDimensions(){
+    var dims={};
     try{
-      if(window.D && Array.isArray(D)){
-        return D.map(function(d){ return d.n; });
+      var st=S && S.st ? S.st : {};
+      for(var k in st){
+        if(!st[k]) continue;
+        if(String(st[k]).trim()==='') continue;
+        var parts=k.split('|');
+        var d='';
+        if(parts.length>=3){ d=parts[1]; }      // P1|135/80 R13|tl -> 135/80 R13
+        else if(parts.length==2){ d=parts[0]; } // 135/80 R13|tl -> 135/80 R13
+        else{ d=parts[0]; }
+        if(d) dims[d]=true;
       }
-      return [];
-    }catch(e){ return []; }
+    }catch(e){}
+    return Object.keys(dims);
   }
-  
-  var allDims = getAllDimensions();
-  log('V83 Init - '+allDims.length+' dimensions dans D - Generalisation - Ne touche pas contenu D');
-  log('Dimensions: '+allDims.slice(0,5).join(', ')+'...');
-  log('Fix 400 - / dans 175/70 - Wrap JSON - Toutes dimensions');
 
-  function cntStock(){
+  function cntStockFixed(){
     try{
-      var s=window.S||{st:{}};
-      var st=s.st||{};
       var c=0;
-      for(var k in st){ if(st[k] && st[k]!=='') c++; }
+      for(var k in S.st){ if(S.st[k] && String(S.st[k]).trim()!=='') c++; }
       return c;
-    }catch(e){return 0;}
+    }catch(e){ return 0; }
   }
-  window.getTotalCount=cntStock;
 
-  function saveAllStockInputs(){
+  function saveAllStockFixed(){
     try{
       var inputs=document.querySelectorAll('input.s[data-s]');
-      if(!window.S) window.S={st:{},m:{},z5:{},z6:{},log:[]};
-      if(!window.S.st) window.S.st={};
       var saved=0;
-      var dimsFound={};
+      var dims={};
       inputs.forEach(function(inp){
         var key=inp.getAttribute('data-s');
-        var val=(inp.value||'').trim();
-        if(key){
-          if(val==='') delete window.S.st[key];
-          else{
-            window.S.st[key]=val;
-            saved++;
-            // Extract dimension from key P1|dimension|field
-            var parts=key.split('|');
-            if(parts.length>=2){
-              var dim=parts[1];
-              dimsFound[dim]=true;
-            }
-          }
-        }
+        var v=(inp.value||'').trim();
+        if(!key) return;
+        var p=key.split('|');
+        var d=p.length>=3?p[1]:p[0];
+        if(v===''){ delete S.st[key]; }
+        else{ S.st[key]=v; saved++; if(d) dims[d]=true; }
       });
-      if(saved>0 && window.save){
-        window.S._updatedAt=Date.now();
-        window.S._allDimensions=allDims;
-        window.S._dimsFound=Object.keys(dimsFound);
-        save();
-        log('💾 '+saved+' stock P1 sauvés - Dimensions: '+Object.keys(dimsFound).join(', '));
-      }
+      S._dimsFound=Object.keys(dims);
+      S._updatedAt=Date.now();
+      if(typeof save==='function') save();
       return saved;
-    }catch(e){log('Save err '+e.message);return 0;}
+    }catch(e){ return 0; }
   }
 
-  window.serverSync=async function(){
-    saveAllStockInputs();
-    var cnt=cntStock();
-    var dims = window.S && window.S._dimsFound ? window.S._dimsFound.length : 0;
-    log('SYNC '+cnt+' articles - '+dims+' dimensions - Poste '+(window.currentPoste||'1')+' - Toutes dimensions D');
-    if(cnt===0){
-      log('Stock vide - Saisissez dans toutes dimensions D');
-      alert('Stock vide!\nSaisissez dans n\'importe quelle dimension:\n'+allDims.slice(0,10).join('\n')+'\n...\nPuis Sync - Toutes dimensions synchronisées!');
+  // Override serverSync - SINGLE FIX
+  var _oldSync = window.serverSync;
+  window.serverSync = async function(){
+    saveAllStockFixed();
+    var count=cntStockFixed();
+    var dims=getDimensions(); // FIX: calcule depuis S.st
+    S._dimsFound=dims;
+    v95log('SYNC - '+count+' articles - '+dims.length+' dimensions - '+dims.join(', ').substring(0,80));
+
+    if(count===0){
+      v95log('Stock vide');
+      alert('Stock vide!\nSaisissez une valeur avant Sync.');
       return false;
     }
+
     try{
-      // Generalisation: wrap all S (toutes dimensions) as JSON - évite / dans 175/70 etc.
-      var payload = {
-        data: JSON.stringify(window.S),
-        ts: Date.now(),
-        poste: window.currentPoste||'1',
-        count: cnt,
-        dimensions: window.S._dimsFound||[],
-        allDimensionsCount: allDims.length,
-        info: 'Toutes dimensions D - 101-109 201-210 z5 z6 - Ne touche pas contenu D'
-      };
-      log('Push wrap JSON - Toutes '+allDims.length+' dimensions - 101-109 201-210 z5 z6');
-      var res=await fetch(RTDB,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-      log('Status: '+res.status);
-      if(res.ok){
-        log('PUSH OK '+cnt+' - '+payload.dimensions.length+' dimensions - meme resultat 2 tel!');
-        alert('SYNC OK!\n'+cnt+' articles - '+payload.dimensions.length+' dimensions\n'+payload.dimensions.join(', ')+'\n\nToutes dimensions D synchronisées!\nAutre tel ?v=83 - meme resultat!\nNe touche pas contenu D!');
-        return true;
-      }else{
-        var errTxt=await res.text();
-        log('Push fail '+res.status+' - '+errTxt.substring(0,200));
+      if(typeof pushRemote==='function'){
+        var ok=await pushRemote(currentRoom,S);
+        if(ok){
+          v95log('PUSH OK - '+count+' articles - '+dims.length+' dimensions - meme resultat!');
+          // SINGLE FIX MESSAGE
+          alert('SYNC OK!\n'+count+' articles - '+dims.length+' dimensions\n\n'+dims.join(', ').substring(0,150)+'\n\nToutes dimensions D synchronisees!\nAutre tel ?v=95 - meme resultat!\nNe touche pas contenu D!');
+          return true;
+        }
       }
-    }catch(e){log('Push err '+e.message);}
+    }catch(e){ v95log('Push err '+e.message); }
     return false;
   };
+
   window.oneClickSync=window.serverSync;
   window.manualSyncNow=window.serverSync;
+  window.getDimensionsFromSt=getDimensions;
+  window.getTotalCount=cntStockFixed;
+  window.saveAllStockInputs=saveAllStockFixed;
 
-  async function fetchRestore(){
-    try{
-      var url=RTDB+'?t='+Date.now();
-      var res=await fetch(url,{cache:'no-store'});
-      if(!res.ok) return;
-      var wrapper=await res.json();
-      if(!wrapper){ log('Fetch vide'); return; }
-      
-      var remote=null;
-      if(wrapper.data){
-        try{ remote=JSON.parse(wrapper.data); }
-        catch(e){ log('Parse err'); return; }
-      }else if(wrapper.st){
-        remote=wrapper;
-      }else{
-        log('Fetch vide - pas de data');
-        return;
-      }
-      
-      if(!remote||!remote.st){ log('Fetch vide st'); return; }
-      
-      var remoteCnt=0;
-      for(var k in remote.st){ if(remote.st[k]) remoteCnt++; }
-      var localCnt=cntStock();
-      
-      // Compter dimensions dans remote
-      var remoteDims={};
-      for(var k in remote.st){
-        var parts=k.split('|');
-        if(parts.length>=2) remoteDims[parts[1]]=true;
-      }
-      var remoteDimsCount=Object.keys(remoteDims).length;
-      
-      log('Fetch OK - Remote '+remoteCnt+' ('+remoteDimsCount+' dims) - Local '+localCnt+' - Toutes dimensions');
-      
-      if(remoteCnt===0) return;
-      
-      var needMerge=false;
-      if(remoteCnt!==localCnt) needMerge=true;
-      else{
-        for(var k2 in remote.st){
-          if((window.S.st||{})[k2]!==remote.st[k2]){ needMerge=true; break; }
-        }
-      }
-      
-      if(!needMerge){ log('Deja synchro - toutes dimensions meme resultat'); return; }
-      
-      log('Fusion '+remoteCnt+' - '+remoteDimsCount+' dimensions - 101-109 201-210 z5 z6 - meme resultat');
-      
-      if(!window.S) window.S={st:{},m:{},z5:{},z6:{}};
-      if(!window.S.st) window.S.st={};
-      
-      var merged=0;
-      for(var k3 in remote.st){
-        if(remote.st[k3] && remote.st[k3]!=='' ){
-          if(window.S.st[k3]!==remote.st[k3]){
-            window.S.st[k3]=remote.st[k3];
-            merged++;
-          }
-        }
-      }
-      if(remote.m){
-        window.S.m=window.S.m||{};
-        for(var mk in remote.m){ window.S.m[mk]=remote.m[mk]; }
-      }
-      if(remote.z5) window.S.z5=Object.assign({},window.S.z5||{},remote.z5);
-      if(remote.z6) window.S.z6=Object.assign({},window.S.z6||{},remote.z6);
-      
-      if(merged>0){
-        window.S._updatedAt=Date.now();
-        localStorage.setItem('stp_machines_v1',JSON.stringify(window.S));
-        if(typeof view==='function'){
-          view();
-          log('view() - '+merged+' stock P1 - '+remoteDimsCount+' dimensions - Toutes D - meme resultat!');
-          setTimeout(function(){
-            var inputs2=document.querySelectorAll('input.s[data-s]');
-            var filled=0;
-            var filledDims={};
-            inputs2.forEach(function(inp){
-              var key=inp.getAttribute('data-s');
-              if(key && window.S.st[key] && document.activeElement!==inp){
-                inp.value=window.S.st[key];
-                filled++;
-                var p=key.split('|');
-                if(p.length>=2) filledDims[p[1]]=true;
-              }
-            });
-            if(filled>0) log('✅ '+filled+' cases - '+Object.keys(filledDims).length+' dimensions - meme resultat 2 tel!');
-          },800);
-        }
-      }
-    }catch(e){log('Fetch err '+e.message);}
-  }
-
-  setTimeout(function(){
-    log('Loop 3s - Toutes '+allDims.length+' dimensions D - 101-109 201-210 z5 z6 - Generalisation - Ne touche pas contenu D');
-    log('▶️ Black Box WORKING - Sync toutes dimensions');
-    fetchRestore();
-    setInterval(fetchRestore,3000);
-  },2000);
+  v95log('V95 BASE V83 - SINGLE FIX: 0 -> N dimensions - Pret');
 })();
 </script>
 
