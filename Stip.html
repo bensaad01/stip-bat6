@@ -3064,4 +3064,81 @@ var stk2=document.getElementById("v166-stock");
   window.STIP_SAUVER = sauver;
   window.STIP_RESTAURER = restaurer;
 })();
+</script><script>
+// نزيدو عليه - تنسيق بالـ MACHINE - كل Machine وحدها 101 حتى 210
+(function(){
+  // نلقاو رقم Machine متاع السطر - 101 حتى 210
+  function getMachine(row){
+    if(!row) return null;
+    var txt = row.textContent || "";
+    // نلوجو على 101 - 210 في السطر
+    var m = txt.match(/\b(101|102|103|104|105|106|107|108|109|201|202|203|204|205|206|207|208|209|210)\b/);
+    if(m) return m[1];
+    // كان السطر فيه input فيه اسم Machine، نلقاوه
+    var first = row.querySelector("td:first-child, th:first-child");
+    if(first){
+      var m2 = (first.textContent||"").match(/\b(10[1-9]|20[1-9]|210)\b/);
+      if(m2) return m2[1];
+    }
+    return null;
+  }
+
+  // كي تبدل أي خانة، ننسخوها كان لنفس Machine
+  document.addEventListener("change", function(e){
+    var el = e.target;
+    if(!el || (el.tagName !== "SELECT" && el.tagName !== "INPUT")) return;
+    var row = el.closest("tr");
+    if(!row) return;
+    var machine = getMachine(row);
+    if(!machine) return;
+
+    // نلوجو على نفس Machine في الجداول لخرين
+    document.querySelectorAll("tr").forEach(function(r2){
+      if(r2 === row) return;
+      var m2 = getMachine(r2);
+      if(m2 !== machine) return; // موش نفس Machine، ما نمسوهاش
+
+      // نفس Machine - ننسخو الخانة بنفس الترتيب
+      var inputs1 = row.querySelectorAll("input, select");
+      var inputs2 = r2.querySelectorAll("input, select");
+      var idx = Array.from(inputs1).indexOf(el);
+      if(idx >= 0 && inputs2[idx]){
+        // كان القيمة موش موجودة في القائمة، نزيدوها
+        if(inputs2[idx].tagName === "SELECT" && el.value){
+          var existe = false;
+          for(var i=0;i<inputs2[idx].options.length;i++){
+            if(inputs2[idx].options[i].value === el.value){ existe = true; break; }
+          }
+          if(!existe){
+            var opt = document.createElement("option");
+            opt.value = el.value; opt.text = el.value;
+            inputs2[idx].appendChild(opt);
+          }
+        }
+        inputs2[idx].value = el.value;
+        console.log("✅ SYNC MACHINE " + machine + " - " + el.value + " - وحدها");
+      }
+    });
+  });
+
+  // زادة للكتابة - input
+  document.addEventListener("input", function(e){
+    var el = e.target;
+    if(!el || el.tagName !== "INPUT") return;
+    var row = el.closest("tr");
+    if(!row) return;
+    var machine = getMachine(row);
+    if(!machine) return;
+    document.querySelectorAll("tr").forEach(function(r2){
+      if(r2 === row) return;
+      if(getMachine(r2) !== machine) return;
+      var inputs1 = row.querySelectorAll("input, select");
+      var inputs2 = r2.querySelectorAll("input, select");
+      var idx = Array.from(inputs1).indexOf(el);
+      if(idx >= 0 && inputs2[idx]) inputs2[idx].value = el.value;
+    });
+  });
+
+  console.log("✅ تنسيق بالـ MACHINE - 101 حتى 210 - كل وحدة وحدها");
+})();
 </script></body></html>
