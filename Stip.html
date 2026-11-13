@@ -2900,4 +2900,47 @@ var stk2=document.getElementById("v166-stock");
   setInterval(function(){ hideExtras(); linkRapport(); fillFromSaisie(); }, 2000);
   banner(); hideExtras(); linkRapport(); fillFromSaisie();
 })();
-</script>/body></html>
+</script><script>
+// BASE UNIQUE للقديم - من غير localStorage - يخدم على الخانات بيدها
+(function(){
+  // 1. الذاكرة الوحدة - في السكريبت برك، موش في localStorage
+  window.BASE_UNIQUE = window.BASE_UNIQUE || [];
+
+  // 2. كي تكتب في أي خانة في Saisie، ننسخوها لـ Programme + Rapport
+  document.addEventListener("change", function(e){
+    var input = e.target;
+    if(!input || !input.closest) return;
+
+    // نلقاو السطر اللي فيه الخانة
+    var row = input.closest("tr");
+    if(!row) return;
+
+    // نلقاو Dimension متاع السطر
+    var dimEl = row.querySelector("select, input");
+    var dim = dimEl ? dimEl.value : "";
+    if(!dim) return;
+
+    // 3. نلوجو على نفس Dimension في Programme و Rapport و ننسخو القيمة
+    document.querySelectorAll("tr").forEach(function(r2){
+      var d2 = r2.querySelector("select, input");
+      if(d2 && d2.value === dim && r2 !== row){
+        // ننسخو كل الخانات من السطر الأول للسطر الثاني
+        var inputs1 = row.querySelectorAll("input, select");
+        var inputs2 = r2.querySelectorAll("input, select");
+        for(var i=0; i<inputs1.length && i<inputs2.length; i++){
+          if(inputs2[i] !== input) inputs2[i].value = inputs1[i].value;
+        }
+      }
+    });
+    console.log("✅ SYNC - " + dim + " - Saisie = Programme = Rapport");
+  });
+
+  // 4. كان تحب تحفظ، تحفظ في BASE_UNIQUE برك
+  window.SAVE_BASE = function(obj){
+    window.BASE_UNIQUE.unshift(obj);
+    console.log("✅ BASE_UNIQUE -", window.BASE_UNIQUE.length, "lignes");
+  };
+
+  console.log("✅ BASE UNIQUE OLD - يخدم من غير localStorage");
+})();
+</script></body></html>
