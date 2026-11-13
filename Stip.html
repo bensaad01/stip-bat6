@@ -2861,4 +2861,31 @@ var stk2=document.getElementById("v166-stock");
   syncRapportAuto(); fixSyncLabel();
   console.log("PATCH V120 OK");
 })();
+</script><!-- PATCH V129 - Sans Carte/Dates + Rapport Carcasse/Pneus -> Saisie + Programme par Tour -->
+<script>
+(function(){
+  function hideExtras(){
+    document.querySelectorAll('input, select, label').forEach(function(el){
+      var t = (el.placeholder||'') + ' ' + (el.textContent||'') + ' ' + (el.id||'') + ' ' + (el.name||'');
+      var low = t.toLowerCase();
+      if(low.indexOf('carte')>=0 || low.indexOf('zone provisoire')>=0 || low.indexOf('date de creation')>=0 || low.indexOf('date creation')>=0){
+        if(el.tagName==='LABEL') el.style.display='none';
+        if(el.tagName==='INPUT' || el.tagName==='SELECT'){
+          el.style.display='none';
+          if(el.parentElement) el.parentElement.style.display='none';
+        }
+      }
+    });
+  }
+  function showBanner(){
+    if(document.getElementById('patch129')) return;
+    var d = document.createElement('div');
+    d.id = 'patch129';
+    d.style.cssText = "background:#16a34a;color:#fff;padding:12px;text-align:center;font-weight:800;position:fixed;top:0;left:0;right:0;z-index:99999";
+    d.textContent = "✅ PATCH V129 OK — Sans Carte/Dates — Rapport Carcasse/Pneus → Saisie AUTO";
+    document.body.prepend(d);
+  }
+  setInterval(function(){ hideExtras(); }, 2000);
+  hideExtras(); showBanner();
+})();
 </script></body></html>
