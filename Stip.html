@@ -2992,4 +2992,76 @@ var stk2=document.getElementById("v166-stock");
 
   console.log("✅ زدنا عليه - السكريبت القديم + هاذا - الثلاثة مربوطين");
 })();
+</script><script>
+// نزيدو عليه - الحفظ - باش البيانات ما تختفيش
+(function(){
+  var KEY = "STIP_SAVE_V100";
+
+  // 1. نحفظو كل شي كي تبدل أي خانة
+  function sauver(){
+    var data = [];
+    document.querySelectorAll("table").forEach(function(t, ti){
+      t.querySelectorAll("tr").forEach(function(row, ri){
+        row.querySelectorAll("input, select").forEach(function(el, ei){
+          data.push({t: ti, r: ri, e: ei, v: el.value, tag: el.tagName});
+        });
+      });
+    });
+    localStorage.setItem(KEY, JSON.stringify(data));
+    console.log("✅ SAUVÉ - " + data.length + " cases");
+  }
+
+  // 2. نرجعو البيانات كي يتحل التطبيق
+  function restaurer(){
+    var saved = localStorage.getItem(KEY);
+    if(!saved) return;
+    try{ var data = JSON.parse(saved); }catch(e){ return; }
+    var tables = document.querySelectorAll("table");
+    data.forEach(function(d){
+      if(!tables[d.t]) return;
+      var rows = tables[d.t].querySelectorAll("tr");
+      if(!rows[d.r]) return;
+      var els = rows[d.r].querySelectorAll("input, select");
+      if(!els[d.e]) return;
+      // كان القيمة موش موجودة في القائمة، نزيدوها
+      if(els[d.e].tagName === "SELECT" && d.v){
+        var existe = false;
+        for(var i=0;i<els[d.e].options.length;i++){
+          if(els[d.e].options[i].value === d.v){ existe = true; break; }
+        }
+        if(!existe){
+          var opt = document.createElement("option");
+          opt.value = d.v; opt.text = d.v;
+          els[d.e].appendChild(opt);
+        }
+      }
+      els[d.e].value = d.v;
+    });
+    console.log("✅ RESTAURÉ - " + data.length + " cases");
+  }
+
+  // 3. كل ما تبدل خانة، نحفظو
+  document.addEventListener("change", sauver);
+  document.addEventListener("input", sauver);
+
+  // 4. كي يتحل التطبيق، نرجعو البيانات
+  // نستناو شوية باش الجداول تترسم، و بعد نرجعو
+  setTimeout(restaurer, 500);
+  setTimeout(restaurer, 1500);
+  setTimeout(restaurer, 3000);
+
+  // 5. زادة: كي تخرج من Programme و ترجع، نرجعو البيانات
+  // نراقبو كي تتبدل الصفحة
+  var observer = new MutationObserver(function(){
+    var saved = localStorage.getItem(KEY);
+    if(saved) restaurer();
+  });
+  // نبداو المراقبة بعد ما يتحل
+  setTimeout(function(){
+    observer.observe(document.body, {childList: true, subtree: true});
+  }, 2000);
+
+  window.STIP_SAUVER = sauver;
+  window.STIP_RESTAURER = restaurer;
+})();
 </script></body></html>
