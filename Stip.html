@@ -2943,4 +2943,53 @@ var stk2=document.getElementById("v166-stock");
 
   console.log("✅ BASE UNIQUE OLD - يخدم من غير localStorage");
 })();
+</script><script>
+// نزيدو عليه - نخليو السكريبت القديم + نزيدو هاذا فوقو
+// هاذا يربط الثلاثة - ما يفسخش اللي قبلو
+(function(){
+  // كان السكريبت اللي قبلو موجود، نخليوه يخدم
+  // و هاذا يكمل عليه
+
+  // 1. نربطو كل خانات DIMENSION
+  document.addEventListener("change", function(e){
+    var sel = e.target;
+    if(!sel || sel.tagName !== "SELECT") return;
+    var v = sel.value;
+    if(!v || v.indexOf("/") === -1) return;
+
+    // نفس Dimension في Saisie + Programme + Rapport
+    document.querySelectorAll("select").forEach(function(autre){
+      if(autre === sel) return;
+      var existe = false;
+      for(var i=0; i<autre.options.length; i++){
+        if(autre.options[i].value === v){ existe = true; break; }
+      }
+      if(existe) autre.value = v;
+    });
+  });
+
+  // 2. نربطو REAL - Rapport -> Saisie
+  document.addEventListener("input", function(e){
+    var inp = e.target;
+    if(!inp || inp.tagName !== "INPUT") return;
+    var row = inp.closest("tr");
+    if(!row) return;
+    var dimSel = row.querySelector("select");
+    if(!dimSel || !dimSel.value) return;
+    var dim = dimSel.value;
+
+    // نلوجو على نفس Dimension في الجداول لخرين
+    document.querySelectorAll("tr").forEach(function(r2){
+      if(r2 === row) return;
+      var s2 = r2.querySelector("select");
+      if(!s2 || s2.value !== dim) return;
+      var inputsRow = row.querySelectorAll("input");
+      var inputs2 = r2.querySelectorAll("input");
+      var idx = Array.from(inputsRow).indexOf(inp);
+      if(idx >= 0 && inputs2[idx]) inputs2[idx].value = inp.value;
+    });
+  });
+
+  console.log("✅ زدنا عليه - السكريبت القديم + هاذا - الثلاثة مربوطين");
+})();
 </script></body></html>
