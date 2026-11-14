@@ -3177,4 +3177,57 @@ var stk2=document.getElementById("v166-stock");
     });
   });
 })();
+</script><script>
+// FIX 2+3 - نرجعو Programme + Rapport للقائمة الصح من ورقة 03/11/2026
+(function(){
+  var LISTE = [
+    "165/70 R13TL ATLAS","155/70 R13TL ATLAS","175/70 R14TL ATLAS",
+    "185/65 R14TL SCV","175/65 R14TL SCV","185/65 R15TL SCV",
+    "185/65 R15TL CORONA","195/65 R15TL SCV","185/60 R15TL CORONA",
+    "245/70 R16TL COBRA","205/60 R16TL CORONA","215/55 R16TL PALMA",
+    "650 R16C SN","215/70 R15C DV TL","195 R15C DRIVER TL",
+    "185 R14C DV 8PRTL","195 R14C DV 8PRTL","225/75 R16C DV TL",
+    "700 R16 SN TL","9.00 R 20 SN","10R22,5 Cartago","10R22,5 OASIS",
+    "315/80R22,5 Cartago","315/80R22,5 LION","295/80R22,5 Cartago",
+    "12R22,5 Cartago","11R22,5 Cartago","385/65R22,5 OASIS"
+  ];
+
+  // نلقاو جداول Programme و Rapport - اللي فيهم DIMENSION
+  document.querySelectorAll("table").forEach(function(table){
+    if(!table.textContent.includes("DIMENSION")) return;
+    var rows = table.querySelectorAll("tr");
+    // نبداو من السطر اللي فيه أول Dimension - نتخطاو العناوين
+    var dataRows = [];
+    rows.forEach(function(r){
+      if(r.querySelector("select") && r.querySelector("select").value !== undefined){
+        // كان السطر فيه SELECT، هو سطر بيانات
+        if(r.textContent.includes("DIMENSION") && r.querySelector("th")) return;
+        dataRows.push(r);
+      }
+    });
+    // نرجعو كل سطر للقائمة الصح بنفس الترتيب
+    dataRows.forEach(function(r, idx){
+      if(idx >= LISTE.length) return;
+      var sel = r.querySelector("select");
+      if(!sel) return;
+      // كان القيمة فارغة ولا 160 ولا 155/80 R13 معاود - نرجعوها للقائمة الصح
+      var v = sel.value;
+      if(!v || v === "160" || v === "155/80 R13" || v === "155/70 R13"){
+        // نزيدو القيمة الصح كان موش موجودة
+        var existe = false;
+        for(var i=0;i<sel.options.length;i++){
+          if(sel.options[i].value === LISTE[idx]){ existe = true; break; }
+        }
+        if(!existe){
+          var opt = document.createElement("option");
+          opt.value = LISTE[idx]; opt.text = LISTE[idx];
+          sel.appendChild(opt);
+        }
+        sel.value = LISTE[idx];
+        console.log("✅ FIX LIGNE " + (idx+1) + " -> " + LISTE[idx]);
+      }
+    });
+  });
+  console.log("✅ Programme + Rapport رجعو للقائمة الصح");
+})();
 </script></body></html>
