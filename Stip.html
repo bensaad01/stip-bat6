@@ -3065,80 +3065,69 @@ var stk2=document.getElementById("v166-stock");
   window.STIP_RESTAURER = restaurer;
 })();
 </script><script>
-// نزيدو عليه - تنسيق بالـ MACHINE - كل Machine وحدها 101 حتى 210
+// FIX - DIMENSION -> DIMENSION برك - ما تمشيش لـ TR1 ولا لـ 1-tour carc
 (function(){
-  // نلقاو رقم Machine متاع السطر - 101 حتى 210
-  function getMachine(row){
-    if(!row) return null;
-    var txt = row.textContent || "";
-    // نلوجو على 101 - 210 في السطر
-    var m = txt.match(/\b(101|102|103|104|105|106|107|108|109|201|202|203|204|205|206|207|208|209|210)\b/);
-    if(m) return m[1];
-    // كان السطر فيه input فيه اسم Machine، نلقاوه
-    var first = row.querySelector("td:first-child, th:first-child");
-    if(first){
-      var m2 = (first.textContent||"").match(/\b(10[1-9]|20[1-9]|210)\b/);
-      if(m2) return m2[1];
-    }
-    return null;
+  // نعرفو خانة DIMENSION: هي الـ SELECT اللي فوقها مكتوب DIMENSION
+  function estDimension(el){
+    if(!el || el.tagName !== "SELECT") return false;
+    // نطلعو للجدول و نلوجو على العنوان
+    var table = el.closest("table");
+    if(!table) return false;
+    var head = (table.textContent || "").toUpperCase();
+    if(head.indexOf("DIMENSION") === -1) return false;
+    // نثبتو اللي هاذي هي خانة DIMENSION: هي أول SELECT في السطر، و قيمتها فيها "/"
+    var row = el.closest("tr");
+    if(!row) return false;
+    var selects = row.querySelectorAll("select");
+    // في Programme و Rapport، DIMENSION هي أول SELECT في السطر
+    if(selects[0] !== el) return false;
+    return true;
   }
 
-  // كي تبدل أي خانة، ننسخوها كان لنفس Machine
   document.addEventListener("change", function(e){
-    var el = e.target;
-    if(!el || (el.tagName !== "SELECT" && el.tagName !== "INPUT")) return;
-    var row = el.closest("tr");
-    if(!row) return;
-    var machine = getMachine(row);
-    if(!machine) return;
+    var sel = e.target;
+    if(!estDimension(sel)) return; // موش DIMENSION، ما نمسوهاش
 
-    // نلوجو على نفس Machine في الجداول لخرين
-    document.querySelectorAll("tr").forEach(function(r2){
-      if(r2 === row) return;
-      var m2 = getMachine(r2);
-      if(m2 !== machine) return; // موش نفس Machine، ما نمسوهاش
+    var v = sel.value;
+    if(!v || v.indexOf("/") === -1) return;
 
-      // نفس Machine - ننسخو الخانة بنفس الترتيب
-      var inputs1 = row.querySelectorAll("input, select");
-      var inputs2 = r2.querySelectorAll("input, select");
-      var idx = Array.from(inputs1).indexOf(el);
-      if(idx >= 0 && inputs2[idx]){
-        // كان القيمة موش موجودة في القائمة، نزيدوها
-        if(inputs2[idx].tagName === "SELECT" && el.value){
-          var existe = false;
-          for(var i=0;i<inputs2[idx].options.length;i++){
-            if(inputs2[idx].options[i].value === el.value){ existe = true; break; }
-          }
-          if(!existe){
-            var opt = document.createElement("option");
-            opt.value = el.value; opt.text = el.value;
-            inputs2[idx].appendChild(opt);
+    // نلقاو رقم Machine متاع السطر - باش ننسخو كان لنفس Machine
+    var row = sel.closest("tr");
+    var machineTxt = (row.textContent || "").match(/A70\s*[—-]\s*(10[1-9]|20[1-9]|210)/);
+    var machine = machineTxt ? machineTxt[1] : null;
+
+    // ننسخو DIMENSION برك، لنفس Machine برك، في الجداول لخرين
+    document.querySelectorAll("table").forEach(function(t2){
+      t2.querySelectorAll("tr").forEach(function(r2){
+        if(r2 === row) return;
+        // كان عندنا Machine، لازم نفس Machine
+        if(machine){
+          var m2 = (r2.textContent || "").match(/A70\s*[—-]\s*(10[1-9]|20[1-9]|210)/);
+          if(m2 && m2[1] !== machine) return;
+          // كان الجدول ما فيهش Machine (Programme)، ننسخو بالسطر
+          if(!m2){
+            // Programme: ننسخو بنفس رقم السطر
           }
         }
-        inputs2[idx].value = el.value;
-        console.log("✅ SYNC MACHINE " + machine + " - " + el.value + " - وحدها");
-      }
+        var sel2 = r2.querySelector("select");
+        if(!sel2) return;
+        if(!estDimension(sel2)) return; // لازم تكون DIMENSION زادة
+        // كان القيمة موش موجودة، نزيدوها
+        var existe = false;
+        for(var i=0;i<sel2.options.length;i++){
+          if(sel2.options[i].value === v){ existe = true; break; }
+        }
+        if(!existe){
+          var opt = document.createElement("option");
+          opt.value = v; opt.text = v;
+          sel2.appendChild(opt);
+        }
+        sel2.value = v;
+      });
     });
+    console.log("✅ DIMENSION -> DIMENSION - " + v + " - Machine " + (machine||""));
   });
 
-  // زادة للكتابة - input
-  document.addEventListener("input", function(e){
-    var el = e.target;
-    if(!el || el.tagName !== "INPUT") return;
-    var row = el.closest("tr");
-    if(!row) return;
-    var machine = getMachine(row);
-    if(!machine) return;
-    document.querySelectorAll("tr").forEach(function(r2){
-      if(r2 === row) return;
-      if(getMachine(r2) !== machine) return;
-      var inputs1 = row.querySelectorAll("input, select");
-      var inputs2 = r2.querySelectorAll("input, select");
-      var idx = Array.from(inputs1).indexOf(el);
-      if(idx >= 0 && inputs2[idx]) inputs2[idx].value = el.value;
-    });
-  });
-
-  console.log("✅ تنسيق بالـ MACHINE - 101 حتى 210 - كل وحدة وحدها");
+  console.log("✅ FIX DIMENSION برك - ما تمشيش لـ TR1 ولا لـ 1-tour carc");
 })();
 </script></body></html>
