@@ -3143,4 +3143,38 @@ var stk2=document.getElementById("v166-stock");
   console.log("✅ RESET - البيانات الغالطة تنحات");
   alert("✅ RESET - البيانات الغالطة تنحات - سكر و حل التطبيق من جديد");
 })();
+</script><script>
+// بعد RESET - سكريبت واحد برك - DIMENSION -> DIMENSION
+(function(){
+  document.addEventListener("change", function(e){
+    var sel = e.target;
+    if(!sel || sel.tagName !== "SELECT") return;
+    var row = sel.closest("tr");
+    if(!row) return;
+    var selects = row.querySelectorAll("select");
+    if(selects[0] !== sel) return; // موش DIMENSION، ما نمسوهاش
+    var v = sel.value;
+    if(!v || v.indexOf("/") === -1) return;
+    var table = sel.closest("table");
+    var rows = table ? Array.from(table.querySelectorAll("tr")) : [];
+    var idx = rows.indexOf(row);
+    document.querySelectorAll("table").forEach(function(t2){
+      if(t2 === table) return;
+      var rows2 = t2.querySelectorAll("tr");
+      if(!rows2[idx]) return;
+      var sel2 = rows2[idx].querySelector("select");
+      if(!sel2) return;
+      var existe = false;
+      for(var i=0;i<sel2.options.length;i++){
+        if(sel2.options[i].value === v){ existe = true; break; }
+      }
+      if(!existe){
+        var opt = document.createElement("option");
+        opt.value = v; opt.text = v;
+        sel2.appendChild(opt);
+      }
+      sel2.value = v;
+    });
+  });
+})();
 </script></body></html>
